@@ -1,5 +1,5 @@
 import { S } from '../state.js';
-import { $, mc } from '../dom.js';
+import { $ } from '../dom.js';
 import { fitImage, renderAll } from '../canvas.js';
 import { pushHistory } from '../history.js';
 import { toast } from '../ui.js';

@@ -1,5 +1,5 @@
 import { S } from '../state.js';
-import { $, mc, oc, ctx, octx } from '../dom.js';
+import { $, oc, octx } from '../dom.js';
 import { fitImage, renderAll } from '../canvas.js';
 import { pushHistory } from '../history.js';
 import { drawCropOverlay } from '../overlay.js';

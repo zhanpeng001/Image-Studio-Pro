@@ -1,5 +1,4 @@
 import { S } from './state.js';
-import { mc } from './dom.js';
 import { fitImage, renderAll } from './canvas.js';
 import { drawCropOverlay, drawGridOverlay } from './overlay.js';
 import { updateStatus, toast } from './ui.js';

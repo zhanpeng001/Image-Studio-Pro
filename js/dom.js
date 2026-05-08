@@ -1,5 +1,3 @@
-import { S } from './state.js';
-
 export const $ = id => document.getElementById(id);
 
 // Canvas elements

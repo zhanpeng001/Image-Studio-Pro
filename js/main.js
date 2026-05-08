@@ -1,5 +1,5 @@
 import { S, resetRotatePreview } from './state.js';
-import { $, mc, oc, ctx, octx, panel, dropzone, canvasWrap, fileInput, canvasArea } from './dom.js';
+import { $, mc, oc, ctx, octx, panel, dropzone, canvasWrap, fileInput, canvasArea, statusTool } from './dom.js';
 import { fitImage, renderAll } from './canvas.js';
 import { undo, redo } from './history.js';
 import { clearOverlay, drawCropOverlay, drawGridOverlay } from './overlay.js';
@@ -32,8 +32,12 @@ function switchTool(tool) {
   if (S.tool === 'rotate' && S.rotate.previewActive) {
     resetRotatePreview();
   }
-  // Cleanup old tool events
-  if (S.tool === 'crop') cleanupCropEvents();
+  // Cleanup old tool events and reset drag state
+  if (S.tool === 'crop') {
+    S.crop.dragging = false;
+    S.crop.moving = false;
+    cleanupCropEvents();
+  }
 
   S.tool = tool;
   document.querySelectorAll('.side-btn').forEach(b => {
@@ -41,8 +45,7 @@ function switchTool(tool) {
   });
   clearOverlay();
 
-  const stEl = document.getElementById('statusTool');
-  if (stEl) stEl.textContent = toolStatusLabels[tool] || tool;
+  statusTool.textContent = toolStatusLabels[tool] || tool;
 
   if (!S.img) {
     panel.innerHTML = '<div class="panel-empty"><p>Load an image to start editing</p></div>';

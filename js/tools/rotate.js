@@ -1,5 +1,5 @@
 import { S, resetRotatePreview } from '../state.js';
-import { $, mc, oc, ctx, octx } from '../dom.js';
+import { $ } from '../dom.js';
 import { fitImage, renderAll, renderRotatePreview } from '../canvas.js';
 import { pushHistory } from '../history.js';
 import { toast } from '../ui.js';
@@ -84,6 +84,7 @@ export function applyRotationFromKeyboard() {
 
 function flipH() {
   if (!S.img) return;
+  if (S.rotate.previewActive) resetRotatePreview();
   pushHistory('Flip Horizontal');
   const tmp = document.createElement('canvas');
   tmp.width = S.img.width; tmp.height = S.img.height;
@@ -97,6 +98,7 @@ function flipH() {
 
 function flipV() {
   if (!S.img) return;
+  if (S.rotate.previewActive) resetRotatePreview();
   pushHistory('Flip Vertical');
   const tmp = document.createElement('canvas');
   tmp.width = S.img.width; tmp.height = S.img.height;
