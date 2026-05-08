@@ -25,6 +25,7 @@ function init() {
   setupUpload();
   setupSidebar();
   setupTopbar();
+  setupSaveModal();
   setupKeys();
   switchTool('crop');
 }
@@ -105,17 +106,47 @@ function resetWork() {
 
 function pushHistory() {
   S.history = S.history.slice(0, S.histIdx + 1);
-  S.history.push(new ImageData(new Uint8ClampedArray(S.workData.data), mc.width, mc.height));
+  // Save image at full resolution as compressed data URL
+  const tmp = document.createElement('canvas');
+  tmp.width = S.img.width;
+  tmp.height = S.img.height;
+  tmp.getContext('2d').drawImage(S.img, 0, 0);
+  S.history.push({ dataURL: tmp.toDataURL('image/png'), w: S.img.width, h: S.img.height });
   S.histIdx = S.history.length - 1;
   if (S.history.length > 50) { S.history.shift(); S.histIdx--; }
 }
 
+function restoreFromHistory(idx) {
+  const entry = S.history[idx];
+  const img = new Image();
+  img.onload = () => {
+    S.img = img;
+    fitImage(); renderAll();
+    updateStatus();
+    // Redraw overlay for current tool
+    if (S.tool === 'crop') drawCropOverlay();
+    else if (S.tool === 'grid') drawGridOverlay();
+  };
+  img.src = entry.dataURL;
+}
+
 function undo() {
-  if (S.histIdx <= 0) { resetWork(); S.histIdx = -1; return; }
+  if (S.histIdx <= 0) {
+    // Restore to the original loaded image
+    S.img = S.origImg;
+    S.histIdx = -1;
+    fitImage(); renderAll(); updateStatus();
+    switchTool(S.tool);
+    return;
+  }
   S.histIdx--;
-  S.workData = new ImageData(new Uint8ClampedArray(S.history[S.histIdx].data), mc.width, mc.height);
-  applyWork();
-  updateImgFromCanvas();
+  restoreFromHistory(S.histIdx);
+}
+
+function redo() {
+  if (S.histIdx >= S.history.length - 1) return;
+  S.histIdx++;
+  restoreFromHistory(S.histIdx);
 }
 
 function updateImgFromCanvas() {
@@ -162,6 +193,7 @@ function clearOverlay() {
 // ==================== TOPBAR ====================
 function setupTopbar() {
   $('btnUndo').addEventListener('click', undo);
+  $('btnRedo').addEventListener('click', redo);
   $('btnSave').addEventListener('click', downloadCurrent);
   $('btnFit').addEventListener('click', () => { if (S.img) { fitImage(); renderAll(); switchTool(S.tool); } });
   $('btnActual').addEventListener('click', () => {
@@ -504,7 +536,11 @@ async function runAIBG() {
   toast('Processing with AI...');
 
   try {
-    const blob = await new Promise(res => mc.toBlob(res, 'image/png'));
+    // Use full-resolution image for AI processing
+    const tmp = document.createElement('canvas');
+    tmp.width = S.img.width; tmp.height = S.img.height;
+    tmp.getContext('2d').drawImage(S.img, 0, 0);
+    const blob = await new Promise(res => tmp.toBlob(res, 'image/png'));
     const resBlob = await window.__bgMod.removeBackground(blob);
     const url = URL.createObjectURL(resBlob);
     const nimg = new Image();
@@ -523,54 +559,62 @@ async function runAIBG() {
 }
 
 function refineEdges() {
-  applyWork();
-  const data = S.workData;
   const tol = S.bg.tol;
   const feather = S.bg.feather;
-  const w = mc.width, h = mc.height;
-  const newPx = new Uint8ClampedArray(data.data);
+  const iw = S.img.width, ih = S.img.height;
 
-  for (let py = 0; py < h; py++) {
-    for (let px = 0; px < w; px++) {
-      const idx = (py * w + px) * 4;
-      if (newPx[idx+3] === 0) continue;
+  // Work at full resolution to preserve quality
+  const tmp = document.createElement('canvas');
+  tmp.width = iw; tmp.height = ih;
+  const tx = tmp.getContext('2d');
+  tx.drawImage(S.img, 0, 0);
+  const fullData = tx.getImageData(0, 0, iw, ih);
+  const newPx = new Uint8ClampedArray(fullData.data);
+
+  for (let py = 0; py < ih; py++) {
+    for (let px = 0; px < iw; px++) {
+      const idx = (py * iw + px) * 4;
+      if (newPx[idx + 3] === 0) continue;
 
       // Check if pixel is at an edge (neighbor is transparent)
       let atEdge = false;
       outer: for (let dy = -1; dy <= 1; dy++) {
         for (let dx = -1; dx <= 1; dx++) {
-          const nx = px+dx, ny = py+dy;
-          if (nx>=0 && nx<w && ny>=0 && ny<h) {
-            const ni = (ny*w+nx)*4;
-            if (data.data[ni+3] < 10) { atEdge = true; break outer; }
+          const nx = px + dx, ny = py + dy;
+          if (nx >= 0 && nx < iw && ny >= 0 && ny < ih) {
+            const ni = (ny * iw + nx) * 4;
+            if (fullData.data[ni + 3] < 10) { atEdge = true; break outer; }
           }
         }
       }
 
-      if (atEdge) {
-        // Feather the edge
-        if (feather > 0) {
-          let tCount = 0, total = 0;
-          for (let dy = -feather; dy <= feather; dy++) {
-            for (let dx = -feather; dx <= feather; dx++) {
-              const nx = px+dx, ny = py+dy;
-              if (nx>=0 && nx<w && ny>=0 && ny<h) {
-                total++;
-                if (data.data[(ny*w+nx)*4+3] < 10) tCount++;
-              }
+      if (atEdge && feather > 0) {
+        let tCount = 0, total = 0;
+        for (let dy = -feather; dy <= feather; dy++) {
+          for (let dx = -feather; dx <= feather; dx++) {
+            const nx = px + dx, ny = py + dy;
+            if (nx >= 0 && nx < iw && ny >= 0 && ny < ih) {
+              total++;
+              if (fullData.data[(ny * iw + nx) * 4 + 3] < 10) tCount++;
             }
           }
-          const frac = 1 - (tCount / Math.max(1, total));
-          newPx[idx+3] = Math.round(newPx[idx+3] * Math.pow(frac, tol/50));
         }
+        const frac = 1 - (tCount / Math.max(1, total));
+        newPx[idx + 3] = Math.round(newPx[idx + 3] * Math.pow(frac, tol / 50));
       }
     }
   }
 
-  S.workData = new ImageData(newPx, w, h);
-  applyWork();
-  updateImgFromCanvas();
-  toast('Edges refined');
+  tx.putImageData(new ImageData(newPx, iw, ih), 0, 0);
+
+  const nimg = new Image();
+  nimg.onload = () => {
+    S.img = nimg;
+    fitImage(); renderAll();
+    toast('Edges refined');
+    renderPanel();
+  };
+  nimg.src = tmp.toDataURL('image/png');
 }
 
 // ==================== ROTATE & FLIP TOOL ====================
@@ -773,17 +817,70 @@ function gridUp() { S.grid.drag = null; if (S.tool==='grid') oc.style.cursor='cr
 // ==================== DOWNLOAD ====================
 function downloadCurrent() {
   if (!S.img) { toast('No image to save'); return; }
-  const link = document.createElement('a');
-  link.download = S.fname;
-  link.href = mc.toDataURL('image/png');
-  link.click();
-  toast('Saved: ' + S.fname);
+  $('saveFilename').value = S.fname;
+  $('saveFormat').value = 'png';
+  $('qualityRow').style.display = 'none';
+  $('saveModal').style.display = 'flex';
+}
+
+function setupSaveModal() {
+  $('saveCancel').addEventListener('click', () => {
+    $('saveModal').style.display = 'none';
+  });
+  $('saveModal').addEventListener('click', e => {
+    if (e.target === $('saveModal')) $('saveModal').style.display = 'none';
+  });
+  $('qualityRow').style.display = 'none'; // hidden initially (PNG default)
+  $('saveQuality').addEventListener('input', () => {
+    $('qualVal').textContent = $('saveQuality').value + '%';
+  });
+  $('saveFormat').addEventListener('change', () => {
+    $('qualityRow').style.display = $('saveFormat').value === 'jpeg' ? 'flex' : 'none';
+  });
+  $('saveConfirm').addEventListener('click', () => {
+    const fmt = $('saveFormat').value;
+    const qual = +$('saveQuality').value / 100;
+    const fname = $('saveFilename').value || 'image';
+
+    const tmp = document.createElement('canvas');
+    tmp.width = S.img.width;
+    tmp.height = S.img.height;
+    tmp.getContext('2d').drawImage(S.img, 0, 0);
+
+    let mime;
+    if (fmt === 'jpeg') mime = 'image/jpeg';
+    else if (fmt === 'webp') mime = 'image/webp';
+    else mime = 'image/png';
+
+    const ext = fmt === 'jpeg' ? '.jpg' : '.' + fmt;
+    const dlName = fname.replace(/\.[^.]+$/, '') + ext;
+
+    if (fmt === 'png') {
+      const link = document.createElement('a');
+      link.download = dlName;
+      link.href = tmp.toDataURL('image/png');
+      link.click();
+    } else {
+      tmp.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = dlName;
+        link.href = url;
+        link.click();
+        URL.revokeObjectURL(url);
+      }, mime, qual);
+    }
+
+    $('saveModal').style.display = 'none';
+    toast('Saved: ' + dlName);
+  });
 }
 
 // ==================== KEYBOARD ====================
 function setupKeys() {
   document.addEventListener('keydown', e => {
     if (!S.img) return;
+    if (e.ctrlKey && e.shiftKey && e.key === 'Z') { e.preventDefault(); redo(); }
     if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); }
     if (e.ctrlKey && e.key === 's') { e.preventDefault(); downloadCurrent(); }
     if (e.ctrlKey && e.key === 'o') { e.preventDefault(); $('fileInput').click(); }
@@ -802,7 +899,18 @@ function toast(msg) {
 
 // ==================== RESIZE ====================
 window.addEventListener('resize', () => {
-  if (S.img) { fitImage(); renderAll(); switchTool(S.tool); }
+  if (S.img) {
+    fitImage();
+    ctx.clearRect(0, 0, mc.width, mc.height);
+    ctx.drawImage(S.img, 0, 0, mc.width, mc.height);
+    S.origData = ctx.getImageData(0, 0, mc.width, mc.height);
+    S.workData = new ImageData(new Uint8ClampedArray(S.origData.data), mc.width, mc.height);
+    applyWork();
+    // Redraw overlay without resetting panel
+    if (S.tool === 'crop') drawCropOverlay();
+    else if (S.tool === 'grid') drawGridOverlay();
+    updateStatus();
+  }
 });
 
 init();
