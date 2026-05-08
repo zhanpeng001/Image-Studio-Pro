@@ -56,7 +56,7 @@ export function redo() {
   toast('Redone: ' + label);
 }
 
-function updateUndoRedoButtons() {
+export function updateUndoRedoButtons() {
   const btnUndo = document.getElementById('btnUndo');
   const btnRedo = document.getElementById('btnRedo');
   if (btnUndo) btnUndo.classList.toggle('disabled', S.histIdx < 0);

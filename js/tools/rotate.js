@@ -4,19 +4,47 @@ import { fitImage, renderAll, renderRotatePreview } from '../canvas.js';
 import { pushHistory } from '../history.js';
 import { toast } from '../ui.js';
 
+const COMMON_ANGLES = [-180, -90, -45, 0, 45, 90, 180];
+const SNAP_THRESHOLD = 3;
+
+function snapAngle(deg) {
+  for (const a of COMMON_ANGLES) {
+    if (Math.abs(deg - a) <= SNAP_THRESHOLD) return a;
+  }
+  return deg;
+}
+
 export function renderRotatePanel(p) {
+  const currentAngle = S.rotate.previewActive ? S.rotate.previewAngle : 0;
   p.innerHTML = `
     <h3>Rotate & Flip</h3>
-    <div class="col"><label>Quick Rotate</label>
-      <div class="row">
-        <button class="btn btn-sm" id="rotCCW">90 CCW</button>
-        <button class="btn btn-sm" id="rotCW">90 CW</button>
-        <button class="btn btn-sm" id="rot180">180</button>
+    <div class="col"><label>Quick Presets</label>
+      <div class="presets" id="rotPresets">
+        <span class="preset" data-deg="90">90&deg; CW</span>
+        <span class="preset" data-deg="-90">90&deg; CCW</span>
+        <span class="preset" data-deg="180">180&deg;</span>
+        <span class="preset" data-deg="45">45&deg; CW</span>
+        <span class="preset" data-deg="-45">45&deg; CCW</span>
+        <span class="preset" data-deg="0">Reset 0&deg;</span>
       </div>
     </div>
     <div class="divider"></div>
-    <div class="col"><label>Custom Angle: <span class="val" id="angVal">0</span></label>
-    <input type="range" id="angSlider" min="-180" max="180" value="0"></div>
+    <div class="col"><label>Fine Tune</label>
+      <div class="row">
+        <button class="btn btn-sm" id="rotN1">-1&deg;</button>
+        <button class="btn btn-sm" id="rotN01">-0.1&deg;</button>
+        <button class="btn btn-sm" id="rotP01">+0.1&deg;</button>
+        <button class="btn btn-sm" id="rotP1">+1&deg;</button>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="col"><label>Custom Angle</label>
+      <div class="row" style="align-items:center;">
+        <input type="range" id="angSlider" min="-180" max="180" value="${currentAngle}" style="flex:1;">
+        <input type="number" id="angInput" value="${currentAngle}" style="width:62px;text-align:center;" step="0.1">
+        <span style="font-size:13px;color:var(--text2);">deg</span>
+      </div>
+    </div>
     <button class="btn primary btn-block" id="rotApply">Apply Rotation</button>
     <div class="divider"></div>
     <div class="col"><label>Flip</label>
@@ -27,19 +55,72 @@ export function renderRotatePanel(p) {
     </div>
   `;
 
-  $('rotCCW').onclick = () => { startLivePreview(-90); };
-  $('rotCW').onclick = () => { startLivePreview(90); };
-  $('rot180').onclick = () => { startLivePreview(180); };
+  // Quick presets
+  const presetsEl = $('rotPresets');
+  if (presetsEl) {
+    presetsEl.addEventListener('click', e => {
+      const pr = e.target.closest('.preset');
+      if (!pr) return;
+      const deg = +pr.dataset.deg;
+      setAngle(deg);
+    });
+  }
 
+  // Fine tune buttons
+  $('rotN1').onclick = () => adjustAngle(-1);
+  $('rotN01').onclick = () => adjustAngle(-0.1);
+  $('rotP01').onclick = () => adjustAngle(0.1);
+  $('rotP1').onclick = () => adjustAngle(1);
+
+  // Slider
   $('angSlider').oninput = () => {
-    const deg = +$('angSlider').value;
-    $('angVal').textContent = deg;
-    startLivePreview(deg);
+    const raw = +$('angSlider').value;
+    const snapped = snapAngle(raw);
+    $('angInput').value = snapped;
+    startLivePreview(snapped);
+  };
+  $('angSlider').onchange = () => {
+    // On release, snap to common angle
+    const raw = +$('angSlider').value;
+    const snapped = snapAngle(raw);
+    $('angSlider').value = snapped;
+    $('angInput').value = snapped;
+    startLivePreview(snapped);
+  };
+
+  // Numeric input
+  $('angInput').oninput = () => {
+    const v = parseFloat($('angInput').value);
+    if (isNaN(v)) return;
+    const clamped = Math.max(-180, Math.min(180, v));
+    $('angSlider').value = clamped;
+    startLivePreview(clamped);
+  };
+  $('angInput').onchange = () => {
+    const v = parseFloat($('angInput').value);
+    if (isNaN(v)) { $('angInput').value = 0; $('angSlider').value = 0; return; }
+    const clamped = Math.max(-180, Math.min(180, v));
+    $('angInput').value = clamped;
+    $('angSlider').value = clamped;
+    startLivePreview(clamped);
   };
 
   $('rotApply').onclick = commitRotation;
   $('flipH').onclick = flipH;
   $('flipV').onclick = flipV;
+}
+
+function setAngle(deg) {
+  $('angSlider').value = deg;
+  $('angInput').value = deg;
+  startLivePreview(deg);
+}
+
+function adjustAngle(delta) {
+  let current = S.rotate.previewActive ? S.rotate.previewAngle : 0;
+  current = Math.round((current + delta) * 10) / 10; // avoid floating point issues
+  current = Math.max(-180, Math.min(180, current));
+  setAngle(current);
 }
 
 function startLivePreview(deg) {
@@ -49,8 +130,11 @@ function startLivePreview(deg) {
 }
 
 export function commitRotation() {
-  if (!S.rotate.previewActive) return;
-  const deg = S.rotate.previewAngle;
+  let deg = S.rotate.previewAngle;
+  if (!S.rotate.previewActive) {
+    const slider = $('angSlider');
+    deg = slider ? +slider.value : 0;
+  }
   resetRotatePreview();
   applyRotation(deg);
 }

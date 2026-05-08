@@ -47,6 +47,8 @@ export function renderResizePanel(p) {
   function updateH() {
     S.resize.h = +hEl.value || 1;
     if (lockEl.checked) { S.resize.w = Math.round(S.resize.h * ratio); wEl.value = S.resize.w; }
+    pctEl.value = Math.round(S.resize.w / S.img.width * 100);
+    pctVal.textContent = pctEl.value + '%';
     if (doLive()) renderLivePreview();
   }
 

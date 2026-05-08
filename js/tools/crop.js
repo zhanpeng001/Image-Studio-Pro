@@ -170,7 +170,11 @@ function cropMove(e) {
   if (!c.dragging) return;
 
   if (c.dragCorner === 'new') {
-    c.w = mx - c.x; c.h = my - c.y;
+    // Allow dragging in any direction — normalize negative dimensions
+    let nx = c.x, ny = c.y, nw = mx - c.x, nh = my - c.y;
+    if (nw < 0) { nx = mx; nw = -nw; }
+    if (nh < 0) { ny = my; nh = -nh; }
+    c.x = nx; c.y = ny; c.w = nw; c.h = nh;
     if (c.aspect) constrainCropAspect();
   } else {
     handleDrag(mx, my, c);
@@ -190,6 +194,7 @@ function handleDrag(mx, my, c) {
   else if (dc === 'e') { c.w = mx - c.x; }
   if (c.w < 10) c.w = 10;
   if (c.h < 10) c.h = 10;
+  if (c.aspect) constrainCropAspect();
 }
 
 function cropUp(e) {

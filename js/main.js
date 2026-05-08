@@ -1,7 +1,7 @@
 import { S, resetRotatePreview } from './state.js';
-import { $, mc, oc, ctx, octx, panel, dropzone, canvasWrap, fileInput, canvasArea, statusTool } from './dom.js';
-import { fitImage, renderAll } from './canvas.js';
-import { undo, redo } from './history.js';
+import { $, mc, oc, ctx, octx, panel, dropzone, canvasWrap, canvasArea, statusTool, saveModal } from './dom.js';
+import { fitImage, renderAll, renderRotatePreview } from './canvas.js';
+import { undo, redo, updateUndoRedoButtons } from './history.js';
 import { clearOverlay, drawCropOverlay, drawGridOverlay } from './overlay.js';
 import { toast, updateStatus, setupKeys, setupShortcutsPanel, setupSaveModal, openSaveDialog } from './ui.js';
 import { renderCropPanel, setupCropEvents, cleanupCropEvents, applyCropFromKeyboard } from './tools/crop.js';
@@ -28,15 +28,22 @@ const toolStatusLabels = {
 };
 
 function switchTool(tool) {
-  // Discard uncommitted rotate preview
+  // Discard uncommitted tool previews and restore canvas when switching tools
+  const changingTool = S.tool !== tool;
   if (S.tool === 'rotate' && S.rotate.previewActive) {
     resetRotatePreview();
   }
-  // Cleanup old tool events and reset drag state
   if (S.tool === 'crop') {
     S.crop.dragging = false;
     S.crop.moving = false;
     cleanupCropEvents();
+  }
+  if (S.tool === 'grid') {
+    S.grid.drag = null;
+  }
+
+  if (S.img && changingTool) {
+    renderAll();
   }
 
   S.tool = tool;
@@ -66,13 +73,25 @@ function setupCanvasEvents() {
 }
 
 // ==================== UPLOAD ====================
+function openFileDialog() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.style.display = 'none';
+  document.body.appendChild(input);
+  input.addEventListener('change', e => {
+    const f = e.target.files[0];
+    if (f) loadFile(f);
+    input.remove();
+  });
+  input.click();
+}
+
 function setupUpload() {
   const dz = dropzone;
-  const fi = fileInput;
 
-  dz.addEventListener('click', () => fi.click());
-  $('btnOpen').addEventListener('click', () => fi.click());
-  fi.addEventListener('change', e => { const f = e.target.files[0]; if (f) loadFile(f); });
+  dz.addEventListener('click', () => openFileDialog());
+  $('btnOpen').addEventListener('click', () => openFileDialog());
 
   let cnt = 0;
   canvasArea.addEventListener('dragenter', e => { e.preventDefault(); cnt++; dz.style.display = 'flex'; });
@@ -84,7 +103,7 @@ function setupUpload() {
 function loadFile(file) {
   if (!file.type.startsWith('image/')) return toast('Not an image file');
   S.fname = file.name.replace(/\.[^.]+$/, '') + '.png';
-  S.history = []; S.histIdx = -1;
+  S.history = []; S.histIdx = -1; updateUndoRedoButtons();
   S.grid.hLines = []; S.grid.vLines = []; S.grid.hCh = false; S.grid.vCh = false;
   S.crop = { x:0, y:0, w:0, h:0, dragging:false, dragCorner:null, aspect:null, moving:false, moveStartX:0, moveStartY:0, moveOrigX:0, moveOrigY:0 };
   S.rotate.angle = 0;
@@ -146,11 +165,20 @@ function init() {
   setupTopbar();
   setupSaveModal();
   setupShortcutsPanel();
-  setupKeys(undo, redo, openSaveDialog);
+  setupKeys(undo, redo, openSaveDialog, openFileDialog);
 
   // Tool-specific keyboard keys (Enter, Escape, Delete)
   document.addEventListener('keydown', e => {
+    const shortcutsOv = document.getElementById('shortcutsOverlay');
+    // Escape closes any open modal/overlay first
+    if (e.key === 'Escape' && !e.ctrlKey && !e.metaKey) {
+      if (shortcutsOv && shortcutsOv.style.display === 'flex') { shortcutsOv.style.display = 'none'; e.preventDefault(); return; }
+      if (saveModal.style.display === 'flex') { saveModal.style.display = 'none'; e.preventDefault(); return; }
+    }
     if (!S.img) return;
+    // Don't fire tool shortcuts when a modal or overlay is open
+    if (saveModal.style.display === 'flex') return;
+    if (shortcutsOv && shortcutsOv.style.display === 'flex') return;
     if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey && document.activeElement === document.body) {
       e.preventDefault();
       if (S.tool === 'crop') applyCropFromKeyboard();
@@ -177,11 +205,14 @@ function init() {
 window.addEventListener('resize', () => {
   if (S.img) {
     fitImage();
-    ctx.clearRect(0, 0, mc.width, mc.height);
-    ctx.drawImage(S.img, 0, 0, mc.width, mc.height);
-    S.origData = ctx.getImageData(0, 0, mc.width, mc.height);
-    S.workData = new ImageData(new Uint8ClampedArray(S.origData.data), mc.width, mc.height);
-    ctx.putImageData(S.workData, 0, 0);
+    if (S.rotate.previewActive) {
+      renderRotatePreview(S.rotate.previewAngle);
+    } else {
+      ctx.clearRect(0, 0, mc.width, mc.height);
+      ctx.drawImage(S.img, 0, 0, mc.width, mc.height);
+      S.origData = ctx.getImageData(0, 0, mc.width, mc.height);
+      S.workData = new ImageData(new Uint8ClampedArray(S.origData.data), mc.width, mc.height);
+    }
     if (S.tool === 'crop') drawCropOverlay();
     else if (S.tool === 'grid') drawGridOverlay();
     updateStatus();

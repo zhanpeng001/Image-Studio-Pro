@@ -1,5 +1,5 @@
 import { S } from './state.js';
-import { $, imageInfo, statusDim, statusZoom, fileInput, saveModal } from './dom.js';
+import { $, imageInfo, statusDim, statusZoom, saveModal } from './dom.js';
 
 // ==================== TOAST ====================
 export function toast(msg) {
@@ -62,10 +62,10 @@ export function setupShortcutsPanel() {
 }
 
 // ==================== KEYBOARD ====================
-let _undoFn, _redoFn, _saveFn;
+let _undoFn, _redoFn, _saveFn, _openFn;
 
-export function setupKeys(undoFn, redoFn, saveFn) {
-  _undoFn = undoFn; _redoFn = redoFn; _saveFn = saveFn;
+export function setupKeys(undoFn, redoFn, saveFn, openFn) {
+  _undoFn = undoFn; _redoFn = redoFn; _saveFn = saveFn; _openFn = openFn;
 
   document.addEventListener('keydown', e => {
     // Shortcuts panel toggle
@@ -81,7 +81,7 @@ export function setupKeys(undoFn, redoFn, saveFn) {
     if (e.ctrlKey && e.shiftKey && (e.key === 'Z' || e.key === 'z')) { e.preventDefault(); if (_redoFn) _redoFn(); }
     else if (e.ctrlKey && e.key === 'z') { e.preventDefault(); if (_undoFn) _undoFn(); }
     else if (e.ctrlKey && e.key === 's') { e.preventDefault(); if (_saveFn) _saveFn(); }
-    else if (e.ctrlKey && e.key === 'o') { e.preventDefault(); fileInput.click(); }
+    else if (e.ctrlKey && e.key === 'o') { e.preventDefault(); if (_openFn) _openFn(); }
   });
 }
 
