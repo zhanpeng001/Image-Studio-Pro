@@ -261,6 +261,7 @@ body {
 .btn.danger:hover { background:var(--danger); color:#fff; }
 .btn.success { background:var(--success); border-color:var(--success); color:#000; }
 .btn:disabled { opacity:0.4; pointer-events:none; cursor:default; }
+.tb-btn.disabled { opacity: 0.35; pointer-events: none; }
 .btn-sm { padding:5px 10px; font-size:12px; }
 .btn-block { width:100%; }
 .btn-icon { padding:6px 8px; min-width:32px; }
