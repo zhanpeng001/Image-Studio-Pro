@@ -1,5 +1,8 @@
 export default defineNuxtConfig({
   ssr: false,
+  nitro: {
+    preset: 'static'
+  },
   devtools: { enabled: true },
   css: ['~/assets/css/editor.css'],
   app: {
