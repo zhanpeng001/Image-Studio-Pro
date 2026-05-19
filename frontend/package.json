@@ -1,0 +1,23 @@
+{
+  "name": "image-studio-pro-frontend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev --host 127.0.0.1 --port 3000",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview --host 127.0.0.1 --port 3000",
+    "typecheck": "nuxt typecheck"
+  },
+  "dependencies": {
+    "@imgly/background-removal": "^1.7.0",
+    "jszip": "^3.10.1",
+    "nuxt": "^3.17.0",
+    "onnxruntime-web": "^1.21.0",
+    "vue": "^3.5.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.0",
+    "vue-tsc": "^2.2.0"
+  }
+}
