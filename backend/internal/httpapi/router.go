@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 )
 
 type Options struct {
@@ -21,6 +23,10 @@ func NewRouter(opts Options) http.Handler {
 
 	mux.HandleFunc("GET /api/version", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"version": opts.Version})
+	})
+
+	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "not_found"})
 	})
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -42,11 +48,28 @@ func serveStaticOrIndex(w http.ResponseWriter, r *http.Request, staticDir string
 		return
 	}
 
-	cleanPath := filepath.Clean(r.URL.Path)
-	if cleanPath == "." || cleanPath == string(filepath.Separator) {
-		cleanPath = "index.html"
+	staticRoot, err := filepath.Abs(staticDir)
+	if err != nil {
+		http.NotFound(w, r)
+		return
 	}
-	target := filepath.Join(staticDir, cleanPath)
+	staticRoot = filepath.Clean(staticRoot)
+
+	cleanPath := path.Clean("/" + r.URL.Path)
+	relativePath := strings.TrimPrefix(cleanPath, "/")
+	if relativePath == "." || relativePath == "" {
+		relativePath = "index.html"
+	}
+	if strings.Contains(relativePath, `\`) || filepath.VolumeName(relativePath) != "" {
+		http.NotFound(w, r)
+		return
+	}
+
+	target := filepath.Join(staticRoot, filepath.FromSlash(relativePath))
+	if !isUnderRoot(staticRoot, target) {
+		http.NotFound(w, r)
+		return
+	}
 
 	if info, err := os.Stat(target); err == nil && !info.IsDir() {
 		http.ServeFile(w, r, target)
@@ -60,4 +83,18 @@ func serveStaticOrIndex(w http.ResponseWriter, r *http.Request, staticDir string
 	}
 
 	http.NotFound(w, r)
+}
+
+func isUnderRoot(root string, target string) bool {
+	targetAbs, err := filepath.Abs(target)
+	if err != nil {
+		return false
+	}
+	targetAbs = filepath.Clean(targetAbs)
+
+	rel, err := filepath.Rel(root, targetAbs)
+	if err != nil {
+		return false
+	}
+	return rel == "." || (rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)))
 }
