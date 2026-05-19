@@ -209,6 +209,20 @@ function init(signal) {
   $('btnRedo').classList.add('disabled');
 }
 
+function restoreMountedImage() {
+  dropzone.style.display = 'none';
+  canvasWrap.style.display = 'block';
+  fitImage();
+  if (S.rotate.previewActive) {
+    renderRotatePreview(S.rotate.previewAngle);
+  } else {
+    renderAll();
+  }
+  updateStatus();
+  updateUndoRedoButtons();
+  switchTool(S.tool);
+}
+
 function handleResize() {
   if (S.img) {
     fitImage();
@@ -237,6 +251,9 @@ export function initEditor() {
   initialized = true;
   window.addEventListener('resize', handleResize);
   init(signal);
+  if (S.img) {
+    restoreMountedImage();
+  }
   cleanupEditor = () => {
     if (!initialized) return;
     cleanupCropEvents();

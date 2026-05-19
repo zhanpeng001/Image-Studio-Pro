@@ -36,7 +36,18 @@ export function resetWork() {
 export function renderRotatePreview(angleDeg) {
   if (!S.img) return;
   const rad = angleDeg * Math.PI / 180;
-  const iw = mc.width, ih = mc.height;
+  const iw = S.viewW || mc.width;
+  const ih = S.viewH || mc.height;
+  const c = Math.abs(Math.cos(rad));
+  const s = Math.abs(Math.sin(rad));
+  const bw = Math.max(1, Math.ceil(iw * c + ih * s));
+  const bh = Math.max(1, Math.ceil(iw * s + ih * c));
+
+  mc.width = bw; mc.height = bh;
+  oc.width = bw; oc.height = bh;
+  mc.style.width = bw + 'px'; mc.style.height = bh + 'px';
+  oc.style.width = bw + 'px'; oc.style.height = bh + 'px';
+
   ctx.clearRect(0, 0, mc.width, mc.height);
   ctx.save();
   ctx.translate(mc.width / 2, mc.height / 2);
