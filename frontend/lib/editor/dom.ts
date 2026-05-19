@@ -12,6 +12,10 @@ export function $(id: string): EditorElement {
   return element as EditorElement;
 }
 
+export function optional$(id: string): EditorElement | null {
+  return document.getElementById(id) as EditorElement | null;
+}
+
 // Canvas elements
 export const mc = $('mainCanvas') as unknown as HTMLCanvasElement;
 export const oc = $('overlayCanvas') as unknown as HTMLCanvasElement;

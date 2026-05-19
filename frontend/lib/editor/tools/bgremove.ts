@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { S } from '../state.js';
-import { $ } from '../dom.js';
+import { $, optional$ } from '../dom.js';
 import { fitImage, renderAll } from '../canvas.js';
 import { pushHistory } from '../history.js';
 import { toast } from '../ui.js';
@@ -31,17 +31,17 @@ export function renderBGPanel(p) {
   }
   p.innerHTML = html;
 
-  const loadBtn = $('bgLoad');
+  const loadBtn = optional$('bgLoad');
   if (loadBtn) loadBtn.onclick = () => { loadAI(); };
-  const runBtn = $('bgRun');
+  const runBtn = optional$('bgRun');
   if (runBtn) runBtn.onclick = () => { runAIBG(); };
-  const refChk = $('bgRefine');
+  const refChk = optional$('bgRefine');
   if (refChk) refChk.onchange = () => { bg.refine = refChk.checked; renderBGPanel(p); };
-  const tolEl = $('bgTol');
+  const tolEl = optional$('bgTol');
   if (tolEl) tolEl.oninput = () => { bg.tol = +tolEl.value; $('bgTolV').textContent = bg.tol; };
-  const feEl = $('bgFeath');
+  const feEl = optional$('bgFeath');
   if (feEl) feEl.oninput = () => { bg.feather = +feEl.value; $('bgFeathV').textContent = bg.feather + 'px'; };
-  const refApply = $('bgRefineApply');
+  const refApply = optional$('bgRefineApply');
   if (refApply) refApply.onclick = () => { refineEdges(); };
 }
 
