@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { S, resetRotatePreview } from './state.js';
-import { $, mc, oc, ctx, octx, panel, dropzone, canvasWrap, canvasArea, statusTool, saveModal } from './dom.js';
+import { $, refreshDomBindings, mc, oc, ctx, panel, dropzone, canvasWrap, canvasArea, statusTool, saveModal } from './dom.js';
 import { fitImage, renderAll, renderRotatePreview } from './canvas.js';
 import { undo, redo, updateUndoRedoButtons } from './history.js';
 import { clearOverlay, drawCropOverlay, drawGridOverlay } from './overlay.js';
@@ -13,6 +13,7 @@ import { renderRotatePanel, commitRotation, applyRotationFromKeyboard } from './
 
 let initialized = false;
 let cleanupEditor = () => {};
+let initAbortController = null;
 
 // ==================== TOOL SWITCHING ====================
 const toolPanels = {
@@ -91,23 +92,23 @@ function openFileDialog() {
   input.click();
 }
 
-function setupUpload() {
+function setupUpload(signal) {
   const dz = dropzone;
 
-  dz.addEventListener('click', () => openFileDialog());
-  $('btnOpen').addEventListener('click', () => openFileDialog());
+  dz.addEventListener('click', () => openFileDialog(), { signal });
+  $('btnOpen').addEventListener('click', () => openFileDialog(), { signal });
 
   let cnt = 0;
-  canvasArea.addEventListener('dragenter', e => { e.preventDefault(); cnt++; dz.style.display = 'flex'; });
-  canvasArea.addEventListener('dragleave', () => { cnt--; if (cnt <= 0) { cnt = 0; if (S.img) dz.style.display = 'none'; } });
-  canvasArea.addEventListener('dragover', e => e.preventDefault());
-  canvasArea.addEventListener('drop', e => { e.preventDefault(); cnt = 0; const f = e.dataTransfer.files[0]; if (f) loadFile(f); });
+  canvasArea.addEventListener('dragenter', e => { e.preventDefault(); cnt++; dz.style.display = 'flex'; }, { signal });
+  canvasArea.addEventListener('dragleave', () => { cnt--; if (cnt <= 0) { cnt = 0; if (S.img) dz.style.display = 'none'; } }, { signal });
+  canvasArea.addEventListener('dragover', e => e.preventDefault(), { signal });
+  canvasArea.addEventListener('drop', e => { e.preventDefault(); cnt = 0; const f = e.dataTransfer.files[0]; if (f) loadFile(f); }, { signal });
 }
 
 function loadFile(file) {
   if (!file.type.startsWith('image/')) return toast('Not an image file');
   S.fname = file.name.replace(/\.[^.]+$/, '') + '.png';
-  S.history = []; S.histIdx = -1; updateUndoRedoButtons();
+  S.history = []; S.redoHistory = []; S.histIdx = -1; updateUndoRedoButtons();
   S.grid.hLines = []; S.grid.vLines = []; S.grid.hCh = false; S.grid.vCh = false;
   S.crop = { x:0, y:0, w:0, h:0, dragging:false, dragCorner:null, aspect:null, moving:false, moveStartX:0, moveStartY:0, moveOrigX:0, moveOrigY:0 };
   S.rotate.angle = 0;
@@ -131,25 +132,25 @@ function loadFile(file) {
 }
 
 // ==================== SIDEBAR ====================
-function setupSidebar() {
+function setupSidebar(signal) {
   document.querySelector('.sidebar').addEventListener('click', e => {
     const btn = e.target.closest('.side-btn');
     if (!btn) return;
     switchTool(btn.dataset.tool);
-  });
+  }, { signal });
 }
 
 // ==================== TOPBAR ====================
-function setupTopbar() {
-  $('btnUndo').addEventListener('click', undo);
-  $('btnRedo').addEventListener('click', redo);
-  $('btnSave').addEventListener('click', openSaveDialog);
+function setupTopbar(signal) {
+  $('btnUndo').addEventListener('click', undo, { signal });
+  $('btnRedo').addEventListener('click', redo, { signal });
+  $('btnSave').addEventListener('click', openSaveDialog, { signal });
   $('btnFit').addEventListener('click', () => {
     if (S.img) {
       if (S.rotate.previewActive) resetRotatePreview();
       fitImage(); renderAll(); switchTool(S.tool);
     }
-  });
+  }, { signal });
   $('btnActual').addEventListener('click', () => {
     if (!S.img) return;
     if (S.rotate.previewActive) resetRotatePreview();
@@ -159,47 +160,49 @@ function setupTopbar() {
     mc.style.width = S.img.width + 'px'; mc.style.height = S.img.height + 'px';
     oc.style.width = S.img.width + 'px'; oc.style.height = S.img.height + 'px';
     renderAll(); switchTool(S.tool);
-  });
+  }, { signal });
+}
+
+function handleToolKeys(e) {
+  const shortcutsOv = document.getElementById('shortcutsOverlay');
+  // Escape closes any open modal/overlay first
+  if (e.key === 'Escape' && !e.ctrlKey && !e.metaKey) {
+    if (shortcutsOv && shortcutsOv.style.display === 'flex') { shortcutsOv.style.display = 'none'; e.preventDefault(); return; }
+    if (saveModal.style.display === 'flex') { saveModal.style.display = 'none'; e.preventDefault(); return; }
+  }
+  if (!S.img) return;
+  // Don't fire tool shortcuts when a modal or overlay is open
+  if (saveModal.style.display === 'flex') return;
+  if (shortcutsOv && shortcutsOv.style.display === 'flex') return;
+  if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey && document.activeElement === document.body) {
+    e.preventDefault();
+    if (S.tool === 'crop') applyCropFromKeyboard();
+    else if (S.tool === 'rotate') applyRotationFromKeyboard();
+  }
+  if ((e.key === 'Escape' || e.key === 'Delete') && document.activeElement === document.body) {
+    e.preventDefault();
+    if (S.tool === 'crop') {
+      S.crop = { x:0, y:0, w:0, h:0, dragging:false, dragCorner:null, aspect:S.crop.aspect, moving:false, moveStartX:0, moveStartY:0, moveOrigX:0, moveOrigY:0 };
+      drawCropOverlay();
+    } else if (S.tool === 'rotate' && S.rotate.previewActive) {
+      resetRotatePreview();
+      renderAll();
+      clearOverlay();
+    }
+  }
 }
 
 // ==================== INIT ====================
-function init() {
-  setupUpload();
-  setupSidebar();
-  setupTopbar();
-  setupSaveModal();
-  setupShortcutsPanel();
-  setupKeys(undo, redo, openSaveDialog, openFileDialog);
+function init(signal) {
+  setupUpload(signal);
+  setupSidebar(signal);
+  setupTopbar(signal);
+  setupSaveModal(signal);
+  setupShortcutsPanel(signal);
+  setupKeys(undo, redo, openSaveDialog, openFileDialog, signal);
 
   // Tool-specific keyboard keys (Enter, Escape, Delete)
-  document.addEventListener('keydown', e => {
-    const shortcutsOv = document.getElementById('shortcutsOverlay');
-    // Escape closes any open modal/overlay first
-    if (e.key === 'Escape' && !e.ctrlKey && !e.metaKey) {
-      if (shortcutsOv && shortcutsOv.style.display === 'flex') { shortcutsOv.style.display = 'none'; e.preventDefault(); return; }
-      if (saveModal.style.display === 'flex') { saveModal.style.display = 'none'; e.preventDefault(); return; }
-    }
-    if (!S.img) return;
-    // Don't fire tool shortcuts when a modal or overlay is open
-    if (saveModal.style.display === 'flex') return;
-    if (shortcutsOv && shortcutsOv.style.display === 'flex') return;
-    if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey && document.activeElement === document.body) {
-      e.preventDefault();
-      if (S.tool === 'crop') applyCropFromKeyboard();
-      else if (S.tool === 'rotate') applyRotationFromKeyboard();
-    }
-    if ((e.key === 'Escape' || e.key === 'Delete') && document.activeElement === document.body) {
-      e.preventDefault();
-      if (S.tool === 'crop') {
-        S.crop = { x:0, y:0, w:0, h:0, dragging:false, dragCorner:null, aspect:S.crop.aspect, moving:false, moveStartX:0, moveStartY:0, moveOrigX:0, moveOrigY:0 };
-        drawCropOverlay();
-      } else if (S.tool === 'rotate' && S.rotate.previewActive) {
-        resetRotatePreview();
-        renderAll();
-        clearOverlay();
-      }
-    }
-  });
+  document.addEventListener('keydown', handleToolKeys, { signal });
 
   switchTool('crop');
   $('btnUndo').classList.add('disabled');
@@ -228,14 +231,21 @@ export function initEditor() {
     return cleanupEditor;
   }
 
+  refreshDomBindings();
+  initAbortController = new AbortController();
+  const { signal } = initAbortController;
   initialized = true;
   window.addEventListener('resize', handleResize);
-  init();
+  init(signal);
   cleanupEditor = () => {
+    if (!initialized) return;
     cleanupCropEvents();
-    // First migration pass: the copied vanilla editor still registers most DOM
-    // listeners with anonymous callbacks across modules. Keep the singleton
-    // initialized so Nuxt remounts/HMR do not attach duplicate listeners.
+    initAbortController?.abort();
+    window.removeEventListener('resize', handleResize);
+    document.getElementById('shortcutsOverlay')?.remove();
+    ['onmousedown','onmousemove','onmouseup','onmouseleave','ondblclick'].forEach(k => { oc[k] = null; });
+    initialized = false;
+    initAbortController = null;
   };
   return cleanupEditor;
 }

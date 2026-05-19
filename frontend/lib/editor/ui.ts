@@ -35,13 +35,14 @@ const SHORTCUTS = [
   ['?', 'Toggle this panel'],
 ];
 
-export function setupShortcutsPanel() {
+export function setupShortcutsPanel(signal) {
+  document.getElementById('shortcutsOverlay')?.remove();
   const overlay = document.createElement('div');
   overlay.id = 'shortcutsOverlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;display:none;align-items:center;justify-content:center;';
   overlay.addEventListener('click', e => {
     if (e.target === overlay) overlay.style.display = 'none';
-  });
+  }, { signal });
 
   const box = document.createElement('div');
   box.style.cssText = 'background:var(--surface,#161b22);border:1px solid var(--border,#30363d);border-radius:10px;padding:24px;max-width:400px;width:90vw;box-shadow:0 16px 48px rgba(0,0,0,0.5);';
@@ -65,7 +66,7 @@ export function setupShortcutsPanel() {
 // ==================== KEYBOARD ====================
 let _undoFn, _redoFn, _saveFn, _openFn;
 
-export function setupKeys(undoFn, redoFn, saveFn, openFn) {
+export function setupKeys(undoFn, redoFn, saveFn, openFn, signal) {
   _undoFn = undoFn; _redoFn = redoFn; _saveFn = saveFn; _openFn = openFn;
 
   document.addEventListener('keydown', e => {
@@ -83,11 +84,11 @@ export function setupKeys(undoFn, redoFn, saveFn, openFn) {
     else if (e.ctrlKey && e.key === 'z') { e.preventDefault(); if (_undoFn) _undoFn(); }
     else if (e.ctrlKey && e.key === 's') { e.preventDefault(); if (_saveFn) _saveFn(); }
     else if (e.ctrlKey && e.key === 'o') { e.preventDefault(); if (_openFn) _openFn(); }
-  });
+  }, { signal });
 }
 
 // ==================== SAVE MODAL ====================
-export function setupSaveModal() {
+export function setupSaveModal(signal) {
   const saveCancel = $('saveCancel');
   const saveConfirm = $('saveConfirm');
   const saveFormat = $('saveFormat');
@@ -98,12 +99,12 @@ export function setupSaveModal() {
 
   qualityRow.style.display = 'none';
 
-  saveCancel.addEventListener('click', () => { saveModal.style.display = 'none'; });
-  saveModal.addEventListener('click', e => { if (e.target === saveModal) saveModal.style.display = 'none'; });
-  saveQuality.addEventListener('input', () => { qualVal.textContent = saveQuality.value + '%'; });
+  saveCancel.addEventListener('click', () => { saveModal.style.display = 'none'; }, { signal });
+  saveModal.addEventListener('click', e => { if (e.target === saveModal) saveModal.style.display = 'none'; }, { signal });
+  saveQuality.addEventListener('input', () => { qualVal.textContent = saveQuality.value + '%'; }, { signal });
   saveFormat.addEventListener('change', () => {
     qualityRow.style.display = saveFormat.value === 'jpeg' ? 'flex' : 'none';
-  });
+  }, { signal });
 
   saveConfirm.addEventListener('click', () => {
     const fmt = saveFormat.value;
@@ -141,7 +142,7 @@ export function setupSaveModal() {
 
     saveModal.style.display = 'none';
     toast('Saved: ' + dlName);
-  });
+  }, { signal });
 }
 
 export function openSaveDialog() {

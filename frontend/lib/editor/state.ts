@@ -62,6 +62,7 @@ export interface EditorState {
   origImg: HTMLImageElement | null;
   fname: string;
   history: HistoryEntry[];
+  redoHistory: HistoryEntry[];
   histIdx: number;
   zoom: number;
   viewW: number;
@@ -86,7 +87,7 @@ export const S: EditorState = {
   bg: { aiLoaded:false, aiLoading:false, refine:false, tol:30, feather:3 },
   rotate: { angle:0, previewAngle:0, previewActive:false },
 
-  history: [], histIdx:-1
+  history: [], redoHistory: [], histIdx:-1
 };
 
 // Reset rotation preview state
