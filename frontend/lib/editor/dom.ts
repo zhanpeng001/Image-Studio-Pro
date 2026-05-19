@@ -26,7 +26,6 @@ export const octx = oc.getContext('2d') as CanvasRenderingContext2D;
 export const panel = $('panel');
 export const dropzone = $('dropzone');
 export const canvasWrap = $('canvasWrap');
-export const fileInput = $('fileInput') as HTMLInputElement;
 export const imageInfo = $('imageInfo');
 export const statusDim = $('statusDim');
 export const statusTool = $('statusTool');

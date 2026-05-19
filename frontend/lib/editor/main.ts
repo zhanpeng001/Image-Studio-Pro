@@ -11,6 +11,9 @@ import { renderGridPanel, setupGridEvents } from './tools/grid.js';
 import { renderBGPanel } from './tools/bgremove.js';
 import { renderRotatePanel, commitRotation, applyRotationFromKeyboard } from './tools/rotate.js';
 
+let initialized = false;
+let cleanupEditor = () => {};
+
 // ==================== TOOL SWITCHING ====================
 const toolPanels = {
   crop: renderCropPanel,
@@ -203,7 +206,7 @@ function init() {
   $('btnRedo').classList.add('disabled');
 }
 
-window.addEventListener('resize', () => {
+function handleResize() {
   if (S.img) {
     fitImage();
     if (S.rotate.previewActive) {
@@ -218,8 +221,21 @@ window.addEventListener('resize', () => {
     else if (S.tool === 'grid') drawGridOverlay();
     updateStatus();
   }
-});
+}
 
 export function initEditor() {
+  if (initialized) {
+    return cleanupEditor;
+  }
+
+  initialized = true;
+  window.addEventListener('resize', handleResize);
   init();
+  cleanupEditor = () => {
+    cleanupCropEvents();
+    // First migration pass: the copied vanilla editor still registers most DOM
+    // listeners with anonymous callbacks across modules. Keep the singleton
+    // initialized so Nuxt remounts/HMR do not attach duplicate listeners.
+  };
+  return cleanupEditor;
 }
