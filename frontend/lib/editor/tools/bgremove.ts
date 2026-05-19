@@ -91,6 +91,7 @@ function refineEdges() {
   const tol = S.bg.tol;
   const feather = S.bg.feather;
   const iw = S.img.width, ih = S.img.height;
+  pushHistory('BG Refine');
 
   const tmp = document.createElement('canvas');
   tmp.width = iw; tmp.height = ih;
