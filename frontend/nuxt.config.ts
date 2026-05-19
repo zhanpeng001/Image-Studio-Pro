@@ -1,8 +1,8 @@
+const isProduction = process.env.NODE_ENV === 'production'
+
 export default defineNuxtConfig({
   ssr: false,
-  nitro: {
-    preset: 'static'
-  },
+  nitro: isProduction ? { preset: 'static' } : {},
   devtools: { enabled: true },
   css: ['~/assets/css/editor.css'],
   app: {
