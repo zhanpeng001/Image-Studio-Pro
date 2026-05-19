@@ -8,6 +8,54 @@ export interface HistoryEntry {
   label: string;
 }
 
+export interface CropState {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  dragging: boolean;
+  dragCorner: string | null;
+  aspect: string | null;
+  moving: boolean;
+  moveStartX: number;
+  moveStartY: number;
+  moveOrigX: number;
+  moveOrigY: number;
+}
+
+export interface ResizeState {
+  w: number;
+  h: number;
+  lock: boolean;
+  pct: number;
+  livePreview: boolean;
+}
+
+export interface GridState {
+  rows: number;
+  cols: number;
+  hLines: number[];
+  vLines: number[];
+  hCh: boolean;
+  vCh: boolean;
+  drag: string | null;
+  dIdx: number;
+}
+
+export interface BackgroundRemovalState {
+  aiLoaded: boolean;
+  aiLoading: boolean;
+  refine: boolean;
+  tol: number;
+  feather: number;
+}
+
+export interface RotateState {
+  angle: number;
+  previewAngle: number;
+  previewActive: boolean;
+}
+
 export interface EditorState {
   tool: EditorTool;
   img: HTMLImageElement | null;
@@ -20,11 +68,11 @@ export interface EditorState {
   viewH: number;
   origData: ImageData | null;
   workData: ImageData | null;
-  crop: Record<string, any>;
-  resize: Record<string, any>;
-  grid: Record<string, any>;
-  bg: Record<string, any>;
-  rotate: Record<string, any>;
+  crop: CropState;
+  resize: ResizeState;
+  grid: GridState;
+  bg: BackgroundRemovalState;
+  rotate: RotateState;
 }
 
 export const S: EditorState = {
