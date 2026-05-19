@@ -83,7 +83,7 @@ Full undo/redo history (up to 50 states). Never lose work to a misclick.
 
 > Your images are never uploaded anywhere.
 
-Every operation - cropping, resizing, rotating, filtering, even AI background removal - happens inside your browser via the Canvas API and local ONNX inference. There is no backend server. There is no telemetry. There are no analytics. You can turn off your internet after loading the page and everything will still work.
+Every image operation - cropping, resizing, rotating, filtering, even AI background removal - happens inside your browser via the Canvas API and local ONNX inference. Image pixels stay in the browser and are never sent to the backend. There is no telemetry. There are no analytics.
 
 ---
 
@@ -94,22 +94,31 @@ Every operation - cropping, resizing, rotating, filtering, even AI background re
 | Canvas | HTML5 Canvas API |
 | AI Inference | ONNX Runtime Web + IMG.LY |
 | ZIP Export | JSZip |
-| UI | Vanilla CSS3 (Flexbox + Custom Properties) |
-| Icons | Inline SVG |
-| Logic | Zero-dependency Vanilla JS |
+| Frontend | Nuxt |
+| Backend | Go |
 
 ---
 
-## Getting Started
+## Development
 
-Open `index.html` in any modern browser. That is it.
-
-No build step. No npm install. No Docker.
+Run the frontend:
 
 ```bash
-python -m http.server 8080
-npx serve .
+cd frontend
+npm install
+npm run dev
 ```
+
+Run the backend:
+
+```bash
+cd backend
+go run ./cmd/server
+```
+
+Frontend: http://127.0.0.1:3000
+Backend: http://127.0.0.1:8080
+Health check: http://127.0.0.1:8080/api/health
 
 ---
 
