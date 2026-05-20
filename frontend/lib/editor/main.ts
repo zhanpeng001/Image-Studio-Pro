@@ -6,10 +6,11 @@ import { undo, redo, updateUndoRedoButtons } from './history.js';
 import { clearOverlay, drawCropOverlay, drawGridOverlay } from './overlay.js';
 import { toast, updateStatus, setupKeys, setupShortcutsPanel, setupSaveModal, openSaveDialog } from './ui.js';
 import { renderCropPanel, setupCropEvents, cleanupCropEvents, applyCropFromKeyboard } from './tools/crop.js';
-import { renderResizePanel } from './tools/resize.js';
+import { renderScalePanel } from './tools/scale.js';
 import { renderGridPanel, setupGridEvents } from './tools/grid.js';
 import { renderBGPanel } from './tools/bgremove.js';
 import { renderRotatePanel, commitRotation, applyRotationFromKeyboard } from './tools/rotate.js';
+import { renderCompressorPanel } from './tools/compressor.js';
 
 let initialized = false;
 let cleanupEditor = () => {};
@@ -18,18 +19,20 @@ let initAbortController = null;
 // ==================== TOOL SWITCHING ====================
 const toolPanels = {
   crop: renderCropPanel,
-  resize: renderResizePanel,
+  resize: renderScalePanel,
   grid: renderGridPanel,
   bgremove: renderBGPanel,
-  rotate: renderRotatePanel
+  rotate: renderRotatePanel,
+  compressor: renderCompressorPanel
 };
 
 const toolStatusLabels = {
   crop: 'Crop',
-  resize: 'Resize',
+  resize: 'Scale',
   grid: 'Grid Split',
   bgremove: 'BG Remove',
-  rotate: 'Rotate & Flip'
+  rotate: 'Rotate & Flip',
+  compressor: 'Compressor'
 };
 
 function switchTool(tool) {

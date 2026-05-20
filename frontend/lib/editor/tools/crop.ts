@@ -5,25 +5,60 @@ import { fitImage, renderAll } from '../canvas.js';
 import { pushHistory } from '../history.js';
 import { drawCropOverlay } from '../overlay.js';
 import { toast } from '../ui.js';
+import { smartResize } from '../lanczos.js';
 
 // ==================== PANEL ====================
 export function renderCropPanel(p) {
+  const customRatio = S.crop.aspect && !['1:1','4:3','16:9','3:2','2:3','9:16'].includes(S.crop.aspect) ? S.crop.aspect : null;
+  const [crW, crH] = customRatio ? customRatio.split(':').map(Number) : [16, 9];
+  const activePreset = S.crop.aspect || 'free';
+
   p.innerHTML = `
     <h3>Crop Image</h3>
     <div class="col"><label>Aspect Ratio</label>
       <div class="presets" id="cropPresets">
-        <span class="preset active" data-ratio="free">Free</span>
-        <span class="preset" data-ratio="1:1">1:1</span>
-        <span class="preset" data-ratio="4:3">4:3</span>
-        <span class="preset" data-ratio="16:9">16:9</span>
-        <span class="preset" data-ratio="3:2">3:2</span>
-        <span class="preset" data-ratio="2:3">2:3</span>
-        <span class="preset" data-ratio="9:16">9:16</span>
+        <span class="preset${activePreset === 'free' ? ' active' : ''}" data-ratio="free">Free</span>
+        <span class="preset${activePreset === '1:1' ? ' active' : ''}" data-ratio="1:1">1:1</span>
+        <span class="preset${activePreset === '4:3' ? ' active' : ''}" data-ratio="4:3">4:3</span>
+        <span class="preset${activePreset === '16:9' ? ' active' : ''}" data-ratio="16:9">16:9</span>
+        <span class="preset${activePreset === '3:2' ? ' active' : ''}" data-ratio="3:2">3:2</span>
+        <span class="preset${activePreset === '2:3' ? ' active' : ''}" data-ratio="2:3">2:3</span>
+        <span class="preset${activePreset === '9:16' ? ' active' : ''}" data-ratio="9:16">9:16</span>
+        <span class="preset${customRatio ? ' active' : ''}" data-ratio="custom">Custom</span>
       </div>
+    </div>
+    <div class="row" id="customRatioRow" style="display:${customRatio ? 'flex' : 'none'};gap:6px;align-items:center;">
+      <input type="number" id="customRatioW" value="${crW}" min="1" max="100" style="flex:1;">
+      <span style="color:var(--text2);font-size:12px;">:</span>
+      <input type="number" id="customRatioH" value="${crH}" min="1" max="100" style="flex:1;">
+    </div>
+    <div class="divider"></div>
+    <div class="col">
+      <label>Resize Output</label>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div class="row">
+          <input type="number" id="cropResW" value="${S.resize.w || S.img.width}" style="flex:1;">
+          <span style="color:var(--text2);font-size:12px;">x</span>
+          <input type="number" id="cropResH" value="${S.resize.h || S.img.height}" style="flex:1;">
+        </div>
+        <label><input type="checkbox" id="cropResLock"${S.resize.lock ? ' checked' : ''}> Lock aspect ratio</label>
+        <div class="presets" id="cropResPresets">
+          <span class="preset" data-w="7680" data-h="4320">8K</span>
+          <span class="preset" data-w="3840" data-h="2160">4K</span>
+          <span class="preset" data-w="2560" data-h="1440">1440p</span>
+          <span class="preset" data-w="1920" data-h="1080">1080p</span>
+          <span class="preset" data-w="1280" data-h="720">720p</span>
+          <span class="preset" data-w="800" data-h="600">800x600</span>
+          <span class="preset" data-w="512" data-h="512">512x512</span>
+          <span class="preset" data-w="256" data-h="256">256x256</span>
+        </div>
+      </div>
+    </div>
     </div>
     <div class="divider"></div>
     <p class="hint">Drag to select. Drag inside box to move. Drag corners/edges to resize. Double-click or Enter to apply. Esc to reset.</p>
     <button class="btn primary btn-block" id="cropApply">Apply Crop</button>
+    <button class="btn btn-block" id="cropResizeApply">Resize Full Image</button>
     <button class="btn btn-block" id="cropReset">Reset Selection</button>
   `;
 
@@ -34,17 +69,84 @@ export function renderCropPanel(p) {
       if (!pr) return;
       presetsEl.querySelectorAll('.preset').forEach(x => x.classList.remove('active'));
       pr.classList.add('active');
-      S.crop.aspect = pr.dataset.ratio === 'free' ? null : pr.dataset.ratio;
+      if (pr.dataset.ratio === 'custom') {
+        const wEl = document.getElementById('customRatioW');
+        const hEl = document.getElementById('customRatioH');
+        const row = document.getElementById('customRatioRow');
+        if (wEl) wEl.style.display = '';
+        if (hEl) hEl.style.display = '';
+        if (row) row.style.display = 'flex';
+        const cw = wEl ? +wEl.value || 16 : 16;
+        const ch = hEl ? +hEl.value || 9 : 9;
+        S.crop.aspect = cw + ':' + ch;
+      } else {
+        const row = document.getElementById('customRatioRow');
+        if (row) row.style.display = 'none';
+        S.crop.aspect = pr.dataset.ratio === 'free' ? null : pr.dataset.ratio;
+      }
       if (S.crop.w > 0) constrainCropAspect();
       drawCropOverlay();
     });
   }
 
+  const customW = document.getElementById('customRatioW');
+  const customH = document.getElementById('customRatioH');
+  if (customW && customH) {
+    const updateCustomRatio = () => {
+      const cw = +customW.value || 16;
+      const ch = +customH.value || 9;
+      S.crop.aspect = cw + ':' + ch;
+      if (S.crop.w > 0) constrainCropAspect();
+      drawCropOverlay();
+    };
+    customW.addEventListener('input', updateCustomRatio);
+    customH.addEventListener('input', updateCustomRatio);
+  }
+
+  // Resize output inputs
+  const resW = $('cropResW');
+  const resH = $('cropResH');
+  const resLock = $('cropResLock');
+  const ratio = S.img.width / S.img.height;
+
+  S.resize.w = +resW.value || S.img.width;
+  S.resize.h = +resH.value || S.img.height;
+  S.resize.lock = resLock.checked;
+
+  const syncResW = () => {
+    S.resize.w = +resW.value || 1;
+    if (resLock.checked) { S.resize.h = Math.round(S.resize.w / ratio); resH.value = S.resize.h; }
+  };
+  const syncResH = () => {
+    S.resize.h = +resH.value || 1;
+    if (resLock.checked) { S.resize.w = Math.round(S.resize.h * ratio); resW.value = S.resize.w; }
+  };
+  resW.addEventListener('input', syncResW);
+  resH.addEventListener('input', syncResH);
+
+  const resPresetsEl = $('cropResPresets');
+  resPresetsEl.addEventListener('click', e => {
+    const pr = e.target.closest('.preset');
+    if (!pr) return;
+    resW.value = +pr.dataset.w;
+    resH.value = +pr.dataset.h;
+    S.resize.w = +pr.dataset.w;
+    S.resize.h = +pr.dataset.h;
+    resLock.checked = true;
+    S.resize.lock = true;
+  });
+
   const applyBtn = $('cropApply');
   const resetBtn = $('cropReset');
   if (applyBtn) applyBtn.onclick = applyCrop;
+  const resizeApplyBtn = $('cropResizeApply');
+  if (resizeApplyBtn) resizeApplyBtn.onclick = applyResizeOnly;
   if (resetBtn) resetBtn.onclick = () => {
     S.crop = { x:0, y:0, w:0, h:0, dragging:false, dragCorner:null, aspect:S.crop.aspect, moving:false, moveStartX:0, moveStartY:0, moveOrigX:0, moveOrigY:0 };
+    resW.value = S.img.width;
+    resH.value = S.img.height;
+    S.resize.w = S.img.width;
+    S.resize.h = S.img.height;
     drawCropOverlay();
   };
 
@@ -243,4 +345,44 @@ export function applyCropFromKeyboard() {
   if (S.tool === 'crop' && S.crop.w >= 5 && S.crop.h >= 5) {
     applyCrop();
   }
+}
+
+function canvasFromImage(img) {
+  const c = document.createElement('canvas');
+  c.width = img.width;
+  c.height = img.height;
+  c.getContext('2d').drawImage(img, 0, 0);
+  return c;
+}
+
+function applyResizeOnly() {
+  let outW = S.resize.w || S.img.width;
+  let outH = S.resize.h || S.img.height;
+
+  if (S.resize.lock) {
+    const srcRatio = S.img.width / S.img.height;
+    const dstRatio = outW / outH;
+    if (dstRatio > srcRatio) {
+      outW = Math.round(outH * srcRatio);
+    } else {
+      outH = Math.round(outW / srcRatio);
+    }
+  }
+
+  if (outW === S.img.width && outH === S.img.height) { toast('Change dimensions first'); return; }
+  pushHistory('Resize');
+  const isDownscale = outW < S.img.width || outH < S.img.height;
+  const result = isDownscale ? smartResize(canvasFromImage(S.img), outW, outH) : (() => {
+    const c = document.createElement('canvas');
+    c.width = outW; c.height = outH;
+    c.getContext('2d').drawImage(S.img, 0, 0, outW, outH);
+    return c;
+  })();
+  const nimg = new Image();
+  nimg.onload = () => {
+    S.img = nimg;
+    fitImage(); renderAll();
+    toast('Resized to ' + outW + 'x' + outH);
+  };
+  nimg.src = result.toDataURL('image/png');
 }

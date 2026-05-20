@@ -21,10 +21,11 @@
     <div class="workspace">
       <nav class="sidebar">
         <button class="side-btn active" data-tool="crop" title="Crop"><span>Crop</span></button>
-        <button class="side-btn" data-tool="resize" title="Resize"><span>Resize</span></button>
+        <button class="side-btn" data-tool="resize" title="Scale"><span>Scale</span></button>
         <button class="side-btn" data-tool="grid" title="Grid Split"><span>Grid Split</span></button>
         <button class="side-btn" data-tool="bgremove" title="Background Removal"><span>BG Remove</span></button>
         <button class="side-btn" data-tool="rotate" title="Rotate & Flip"><span>Rotate</span></button>
+        <button class="side-btn" data-tool="compressor" title="Compress"><span>Compress</span></button>
       </nav>
 
       <main class="canvas-area" id="canvasArea">
@@ -70,10 +71,6 @@
             <option value="jpeg">JPEG - smaller file, no transparency</option>
             <option value="webp">WebP - modern, small and transparent</option>
           </select>
-        </div>
-        <div class="col" id="qualityRow">
-          <label>Quality: <span class="val" id="qualVal">92%</span></label>
-          <input type="range" id="saveQuality" min="10" max="100" value="92">
         </div>
         <div class="modal-actions">
           <button class="btn" id="saveCancel">Cancel</button>

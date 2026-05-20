@@ -92,23 +92,13 @@ export function setupSaveModal(signal) {
   const saveCancel = $('saveCancel');
   const saveConfirm = $('saveConfirm');
   const saveFormat = $('saveFormat');
-  const saveQuality = $('saveQuality');
   const saveFilename = $('saveFilename');
-  const qualVal = $('qualVal');
-  const qualityRow = $('qualityRow');
-
-  qualityRow.style.display = 'none';
 
   saveCancel.addEventListener('click', () => { saveModal.style.display = 'none'; }, { signal });
   saveModal.addEventListener('click', e => { if (e.target === saveModal) saveModal.style.display = 'none'; }, { signal });
-  saveQuality.addEventListener('input', () => { qualVal.textContent = saveQuality.value + '%'; }, { signal });
-  saveFormat.addEventListener('change', () => {
-    qualityRow.style.display = saveFormat.value === 'jpeg' ? 'flex' : 'none';
-  }, { signal });
 
   saveConfirm.addEventListener('click', () => {
     const fmt = saveFormat.value;
-    const qual = +saveQuality.value / 100;
     const fname = saveFilename.value || 'image';
 
     const tmp = document.createElement('canvas');
@@ -137,7 +127,7 @@ export function setupSaveModal(signal) {
         link.href = url;
         link.click();
         URL.revokeObjectURL(url);
-      }, mime, qual);
+      }, mime, 0.92);
     }
 
     saveModal.style.display = 'none';
@@ -149,9 +139,7 @@ export function openSaveDialog() {
   if (!S.img) { toast('No image to save'); return; }
   const saveFilename = $('saveFilename');
   const saveFormat = $('saveFormat');
-  const qualityRow = $('qualityRow');
   saveFilename.value = S.fname;
   saveFormat.value = 'png';
-  qualityRow.style.display = 'none';
   saveModal.style.display = 'flex';
 }
