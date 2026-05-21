@@ -1,0 +1,26 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Image Studio Pro logo</title>
+  <desc id="desc">A polished image editor mark combining a crop frame, aperture, and layered image tile.</desc>
+  <rect width="128" height="128" rx="26" fill="#090D12"/>
+  <rect x="10" y="10" width="108" height="108" rx="22" fill="url(#paint0_linear)"/>
+  <rect x="18" y="18" width="92" height="92" rx="18" fill="#111820" stroke="rgba(255,255,255,0.16)" stroke-width="2"/>
+  <path d="M37 34H27V61" stroke="#EDF4F8" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M91 94H101V67" stroke="#EDF4F8" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M94 37V27H67" stroke="#EDF4F8" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M34 91V101H61" stroke="#EDF4F8" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="35" y="39" width="58" height="50" rx="12" fill="#0B1117" stroke="#5DB7D8" stroke-width="3"/>
+  <path d="M39 79L53 64L64 74L74 58L89 79V82C89 84.2 87.2 86 85 86H43C40.8 86 39 84.2 39 82V79Z" fill="#5B8F77"/>
+  <circle cx="75" cy="53" r="7" fill="#D9B66D"/>
+  <circle cx="64" cy="64" r="18" stroke="#5DB7D8" stroke-width="5"/>
+  <path d="M64 46L76 59H52L64 46Z" fill="#5DB7D8" fill-opacity="0.95"/>
+  <path d="M80 65L66 82L58 58L80 65Z" fill="#287DA2" fill-opacity="0.96"/>
+  <path d="M49 62L62 47L69 72L49 62Z" fill="#68C785" fill-opacity="0.9"/>
+  <path d="M91 25L94 33L102 36L94 39L91 47L88 39L80 36L88 33L91 25Z" fill="#EDF4F8"/>
+  <defs>
+    <linearGradient id="paint0_linear" x1="15" y1="15" x2="115" y2="113" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#287DA2"/>
+      <stop offset="0.55" stop-color="#17212B"/>
+      <stop offset="1" stop-color="#5B8F77"/>
+    </linearGradient>
+  </defs>
+</svg>

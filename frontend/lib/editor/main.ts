@@ -38,6 +38,70 @@ const toolStatusLabels = {
   canva: 'Canva'
 };
 
+const lockedToolPreviews = {
+  crop: `
+    <div class="col"><label>Aspect Ratio</label><div class="presets"><span class="preset active">Free</span><span class="preset">1:1</span><span class="preset">16:9</span><span class="preset">Custom</span></div></div>
+    <div class="col"><label>Output Size</label><div class="row"><input type="number" value="1920" disabled><input type="number" value="1080" disabled></div></div>
+    <button class="btn primary btn-block" disabled>Apply Crop</button>
+    <button class="btn btn-block" disabled>Resize Full Image</button>
+  `,
+  resize: `
+    <div class="col"><label>Scale Presets</label><div class="presets"><span class="preset">25%</span><span class="preset">50%</span><span class="preset active">100%</span><span class="preset">200%</span></div></div>
+    <div class="col"><label>Dimensions</label><div class="row"><input type="number" value="1920" disabled><input type="number" value="1080" disabled></div></div>
+    <button class="btn primary btn-block" disabled>Apply Scale</button>
+  `,
+  grid: `
+    <div class="col"><label>Rows: <span class="val">3</span></label><input type="range" value="3" disabled></div>
+    <div class="col"><label>Columns: <span class="val">3</span></label><input type="range" value="3" disabled></div>
+    <p class="hint">Grid split controls unlock after an image is loaded.</p>
+    <button class="btn primary btn-block" disabled>Download All Cells as ZIP</button>
+  `,
+  bgremove: `
+    <div class="col"><label>AI Model</label><select disabled><option>High quality foreground model</option></select></div>
+    <div class="col"><label>Refinement</label><input type="range" value="30" disabled></div>
+    <button class="btn primary btn-block" disabled>Remove Background</button>
+  `,
+  rotate: `
+    <div class="col"><label>Quick Presets</label><div class="presets"><span class="preset">90&deg; CW</span><span class="preset">90&deg; CCW</span><span class="preset">180&deg;</span></div></div>
+    <div class="col"><label>Custom Angle</label><div class="row"><input type="range" value="0" disabled><input type="number" value="0" disabled></div></div>
+    <button class="btn primary btn-block" disabled>Apply Rotation</button>
+    <button class="btn btn-block" disabled>Save Snapshot</button>
+  `,
+  compressor: `
+    <div class="col"><label>Quality</label><div class="presets"><span class="preset">Small</span><span class="preset active">Balanced</span><span class="preset">Best</span></div></div>
+    <div class="col"><label>Format</label><select disabled><option>WebP</option></select></div>
+    <button class="btn primary btn-block" disabled>Preview Compression</button>
+  `,
+  canva: `
+    <div class="col"><label>Layers</label><div class="locked-layer-row"><span>Background</span><span>locked</span></div><div class="locked-layer-row"><span>Layer 1</span><span>preview</span></div></div>
+    <button class="btn primary btn-block" disabled>Add Layer</button>
+    <button class="btn btn-block" disabled>Merge All & Flatten</button>
+  `
+};
+
+function renderLockedToolPanel(tool) {
+  const title = toolStatusLabels[tool] || 'Tool';
+  const preview = lockedToolPreviews[tool] || lockedToolPreviews.crop;
+  panel.innerHTML = `
+    <div class="locked-panel">
+      <div class="locked-panel-preview" aria-hidden="true">
+        <h3>${title}</h3>
+        ${preview}
+      </div>
+      <div class="locked-panel-overlay">
+        <div class="locked-panel-card">
+          <span class="locked-panel-kicker">Image required</span>
+          <strong>Load an image to enable tools</strong>
+          <p>The controls are ready. Open a file to start editing.</p>
+          <button class="btn primary btn-block" id="lockedOpenImage">Open Image</button>
+        </div>
+      </div>
+    </div>
+  `;
+  const openBtn = document.getElementById('lockedOpenImage');
+  if (openBtn) openBtn.onclick = () => $('btnOpen').click();
+}
+
 function drawCheckerboard() {
   const size = 16;
   for (let y = 0; y < mc.height; y += size) {
@@ -98,7 +162,7 @@ function switchTool(tool) {
   statusTool.textContent = toolStatusLabels[tool] || tool;
 
   if (!S.img) {
-    panel.innerHTML = '<div class="panel-empty"><p>Load an image to start editing</p></div>';
+    renderLockedToolPanel(tool);
   } else {
     const fn = toolPanels[tool];
     if (fn) fn(panel);

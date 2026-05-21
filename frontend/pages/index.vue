@@ -2,16 +2,25 @@
   <div class="app">
     <header class="topbar">
       <div class="topbar-left">
-        <span class="brand">Image Studio Pro</span>
+        <img class="brand-mark" src="/logo.svg" alt="Image Studio Pro logo">
+        <div class="brand-lockup">
+          <span class="brand">Image Studio Pro</span>
+          <span class="brand-subtitle">Precision image tools</span>
+        </div>
       </div>
       <div class="topbar-center">
-        <button class="tb-btn" id="btnOpen" title="Open Image (Ctrl+O)"><span>Open</span></button>
-        <button class="tb-btn" id="btnUndo" title="Undo (Ctrl+Z)"><span>Undo</span></button>
-        <button class="tb-btn" id="btnRedo" title="Redo (Ctrl+Shift+Z)"><span>Redo</span></button>
-        <button class="tb-btn" id="btnSave" title="Save Image (Ctrl+S)"><span>Save</span></button>
-        <div class="tb-divider"></div>
-        <button class="tb-btn" id="btnFit" title="Fit to Screen"><span>Fit</span></button>
-        <button class="tb-btn" id="btnActual" title="Actual Size"><span>1:1</span></button>
+        <div class="command-group">
+          <button class="tb-btn" id="btnOpen" title="Open Image (Ctrl+O)"><span class="tb-icon">O</span><span>Open</span></button>
+          <button class="tb-btn" id="btnSave" title="Save Image (Ctrl+S)"><span class="tb-icon">S</span><span>Save</span></button>
+        </div>
+        <div class="command-group">
+          <button class="tb-btn" id="btnUndo" title="Undo (Ctrl+Z)"><span class="tb-icon">U</span><span>Undo</span></button>
+          <button class="tb-btn" id="btnRedo" title="Redo (Ctrl+Shift+Z)"><span class="tb-icon">R</span><span>Redo</span></button>
+        </div>
+        <div class="command-group">
+          <button class="tb-btn" id="btnFit" title="Fit to Screen"><span>Fit</span></button>
+          <button class="tb-btn" id="btnActual" title="Actual Size"><span>1:1</span></button>
+        </div>
       </div>
       <div class="topbar-right">
         <span class="image-info" id="imageInfo">No image</span>
@@ -20,20 +29,21 @@
 
     <div class="workspace">
       <nav class="sidebar">
-        <button class="side-btn active" data-tool="crop" title="Crop"><span>Crop</span></button>
-        <button class="side-btn" data-tool="resize" title="Scale"><span>Scale</span></button>
-        <button class="side-btn" data-tool="grid" title="Grid Split"><span>Grid Split</span></button>
-        <button class="side-btn" data-tool="bgremove" title="Background Removal"><span>BG Remove</span></button>
-        <button class="side-btn" data-tool="rotate" title="Rotate & Flip"><span>Rotate</span></button>
-        <button class="side-btn" data-tool="compressor" title="Compress"><span>Compress</span></button>
-        <button class="side-btn" data-tool="canva" title="Canva"><span>Canva</span></button>
+        <button class="side-btn active" data-tool="crop" title="Crop"><span class="tool-mark">CR</span><span>Crop</span></button>
+        <button class="side-btn" data-tool="resize" title="Scale"><span class="tool-mark">SC</span><span>Scale</span></button>
+        <button class="side-btn" data-tool="grid" title="Grid Split"><span class="tool-mark">GR</span><span>Grid</span></button>
+        <button class="side-btn" data-tool="bgremove" title="Background Removal"><span class="tool-mark">BG</span><span>Remove</span></button>
+        <button class="side-btn" data-tool="rotate" title="Rotate & Flip"><span class="tool-mark">RT</span><span>Rotate</span></button>
+        <button class="side-btn" data-tool="compressor" title="Compress"><span class="tool-mark">CP</span><span>Compress</span></button>
+        <button class="side-btn" data-tool="canva" title="Canva"><span class="tool-mark">CV</span><span>Canva</span></button>
       </nav>
 
       <main class="canvas-area" id="canvasArea">
         <div class="dropzone" id="dropzone">
           <div class="dropzone-content">
+            <div class="dropzone-badge">Drop or browse</div>
             <h2>Drop an image here</h2>
-            <p>or click to browse - PNG, JPG, WEBP, GIF, SVG</p>
+            <p>PNG, JPG, WEBP, GIF, and SVG files are supported.</p>
           </div>
         </div>
         <div class="canvas-wrap" id="canvasWrap" style="display:none">
@@ -44,8 +54,20 @@
       </main>
 
       <aside class="panel" id="panel">
-        <div class="panel-empty">
-          <p>Load an image to start editing</p>
+        <div class="locked-panel">
+          <div class="locked-panel-preview" aria-hidden="true">
+            <h3>Crop</h3>
+            <div class="col"><label>Aspect Ratio</label><div class="presets"><span class="preset active">Free</span><span class="preset">1:1</span><span class="preset">16:9</span></div></div>
+            <button class="btn primary btn-block" disabled>Apply Crop</button>
+            <button class="btn btn-block" disabled>Resize Full Image</button>
+          </div>
+          <div class="locked-panel-overlay">
+            <div class="locked-panel-card">
+              <span class="locked-panel-kicker">Image required</span>
+              <strong>Load an image to enable tools</strong>
+              <p>The controls are ready. Open a file to start editing.</p>
+            </div>
+          </div>
         </div>
       </aside>
     </div>
@@ -84,6 +106,12 @@
 
 <script setup lang="ts">
 import { useEditor } from '~/composables/useEditor'
+
+useHead({
+  link: [
+    { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }
+  ]
+})
 
 useEditor()
 </script>
