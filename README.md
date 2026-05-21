@@ -1,168 +1,173 @@
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/zhanpeng001/Image-Studio-Pro/main/assets/logo-dark.png">
-    <img src="https://raw.githubusercontent.com/zhanpeng001/Image-Studio-Pro/main/assets/logo.png" alt="Image Studio Pro" width="140">
-  </picture>
-</p>
+# Image Studio Pro
 
-<h1 align="center">Image Studio Pro</h1>
+Image Studio Pro is a private, browser-first image editor built for fast everyday image work: crop, resize, rotate, split grids, remove backgrounds, compose layers, compress, and export without sending image data to a remote editing service.
 
-<p align="center">
-  <strong>The 100% Free, 100% Private, Zero-Compromise Image Editor</strong><br>
-  Runs entirely in your browser. No uploads. No watermarks. No paywalls. No bullshit.
-</p>
+The application is designed as a polished local editing workspace. Most image operations run directly in the browser through Canvas APIs, with AI background removal powered by browser-side inference.
 
-<p align="center">
-  <img src="https://img.shields.io/badge/status-active-success" alt="Status">
-  <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/privacy-100%25%20local-green" alt="Privacy">
-  <img src="https://img.shields.io/badge/price-FREE-brightgreen" alt="Price">
-</p>
+![Status](https://img.shields.io/badge/status-active-success)
+![Frontend](https://img.shields.io/badge/frontend-Nuxt-00DC82)
+![Backend](https://img.shields.io/badge/backend-Go-00ADD8)
+![Privacy](https://img.shields.io/badge/privacy-browser--local-brightgreen)
 
----
+## Highlights
 
-## The Backstory - Why This Exists
+- **Private browser-local editing**: image pixels stay in the browser for core editing operations.
+- **Professional editing workspace**: polished dark UI with a canvas workspace, tool rail, settings panel, and export flows.
+- **AI background removal**: local in-browser background removal using `@imgly/background-removal` and ONNX Runtime Web.
+- **Canva-style layers**: add image layers, position, resize, rotate, reorder, and flatten them into a single image.
+- **Rotation snapshots**: save multiple rotated angle snapshots, delete unwanted takes, and download all saved snapshots as a ZIP.
+- **Grid split export**: slice images into rows and columns, then download all cells as a ZIP archive.
+- **Modern export formats**: save as PNG, JPEG, or WebP.
+- **Undo and redo**: edit history for safer experimentation.
 
-It started the way these things always start: with frustration.
+## Feature Overview
 
-I needed to remove the background from a product photo. Simple enough, right? I searched *free background remover* - half the results were bait, the other half bait-and-switch.
-
-- One site let me upload three images, then locked me behind a $12/month paywall.
-- Another stripped the background beautifully - then slapped a **giant watermark** across the final download.
-- A third claimed it was free but silently **downscaled my 4K image to 720p** unless I paid.
-
-The pattern was everywhere. **Free online image tools are a lie.** Every single one of them is a funnel. The free tier exists to frustrate you into paying - by degrading your output, limiting your usage, watermarking your work, or outright hijacking your images to who-knows-where.
-
-And even when they *are* genuinely free, you have to upload your images to some random server. Wedding photos. Sensitive documents. Creative work in progress. All of it leaves your machine.
-
-So I built **Image Studio Pro** - an image editor that:
-
-- Runs entirely in your browser. Your images never leave your computer. Ever.
-- Uses AI (running locally via ONNX Runtime) for background removal - no cloud, no API keys, no usage limits.
-- Never degrades, watermarks, or compresses your output unless you choose to.
-- Has zero paywalls, zero accounts, zero tracking, zero nonsense.
-
-**This is what free should have always meant.**
-
----
-
-## Features
-
-### AI Background Removal
-One-click background removal powered by [IMG.LY](https://www.npmjs.com/package/@imgly/background-removal). The neural network runs **locally in your browser** - no server, no upload, no API credit system. Refine edges with tolerance and feather controls.
-
-### Smart Crop
-Freeform crop with 7 aspect ratio presets (1:1, 4:3, 16:9, 3:2, 2:3, 9:16). Includes a **rule-of-thirds overlay** and draggable corner handles for precision.
-
-### Resize and Scale
-Pixel-perfect resize with optional aspect ratio lock. Quick presets for common dimensions (1080p, 720p, 800x600, 512x512, 256x256). Percentage-based scaling from 1% to 400%.
-
-### Grid Split
-Slice any image into a custom grid (up to 20x20 = 400 cells). Drag split lines interactively. Download all cells as a **ZIP archive** in one click - perfect for sprite sheets, Instagram carousels, or print layouts.
-
-### Rotate and Flip
-90-degree rotations, 180-degree flips, or fine-tune with a custom angle slider (-180 to 180). Horizontal and vertical mirroring in one click.
-
-### Multi-Format Export
-Save as **PNG** (lossless + transparency), **JPEG** (adjustable quality), or **WebP** (modern, small, supports transparency). Quality slider for JPEG and WebP.
-
-### Undo and Redo
-Full undo/redo history (up to 50 states). Never lose work to a misclick.
-
-### Keyboard Shortcuts
-
-| Shortcut | Action |
-|----------|--------|
-| Ctrl + O | Open image |
-| Ctrl + S | Save image |
-| Ctrl + Z | Undo |
-
----
-
-## Privacy and Security
-
-> Your images are never uploaded anywhere.
-
-Every image operation - cropping, resizing, rotating, filtering, even AI background removal - happens inside your browser via the Canvas API and local ONNX inference. Image pixels stay in the browser and are never sent to the backend. There is no telemetry. There are no analytics.
-
----
+| Tool | Description |
+| --- | --- |
+| Crop | Freeform crop, common aspect ratios, crop reset, and full-image resize. |
+| Scale | Resize by dimensions or percentage with aspect-ratio locking. |
+| Grid Split | Divide an image into configurable rows and columns and export cells as a ZIP. |
+| Background Remove | Run local AI background removal with refinement controls. |
+| Rotate | Rotate by presets or custom angles, flip horizontally/vertically, and save rotation snapshots. |
+| Compress | Preview and download optimized JPEG/WebP output. |
+| Canva | Add and transform layers, reorder them, and merge all layers into a flattened image. |
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Canvas | HTML5 Canvas API |
-| AI Inference | ONNX Runtime Web + IMG.LY |
-| ZIP Export | JSZip |
-| Frontend | Nuxt |
-| Backend | Go |
+| Area | Technology |
+| --- | --- |
+| Frontend | Nuxt 3, Vue 3, TypeScript |
+| Canvas editing | HTML Canvas API |
+| AI background removal | `@imgly/background-removal`, `onnxruntime-web` |
+| ZIP generation | JSZip |
+| Backend | Go HTTP server |
+| Static delivery | Nuxt static output, optional Go static file server |
 
----
+## Project Structure
 
-## Development
+```text
+.
+├── backend/
+│   ├── cmd/server/              # Go server entry point
+│   └── internal/
+│       ├── config/              # Backend configuration
+│       └── httpapi/             # API routes and static file serving
+├── frontend/
+│   ├── assets/css/editor.css    # Main application styling
+│   ├── lib/editor/              # Editor state, canvas, history, tools
+│   ├── pages/index.vue          # Application shell
+│   └── public/logo.svg          # Project logo and favicon
+└── README.md
+```
 
-Run the frontend:
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18 or newer
+- npm
+- Go 1.22 or newer, only required for the optional backend server
+
+### Install Frontend Dependencies
 
 ```bash
 cd frontend
 npm install
+```
+
+### Run the Frontend Dev Server
+
+```bash
 npm run dev
 ```
 
-Run the backend:
+The Nuxt dev server is configured for:
+
+```text
+http://127.0.0.1:3000
+```
+
+### Build the Frontend
+
+```bash
+npm run build
+```
+
+For a static output:
+
+```bash
+npm run generate
+```
+
+Nuxt writes the generated static site to:
+
+```text
+frontend/.output/public
+```
+
+## Optional Backend
+
+The Go backend exposes lightweight API routes and can serve the generated frontend as static files.
+
+### Run Backend Tests
+
+```bash
+cd backend
+go test ./...
+```
+
+### Run the Backend
 
 ```bash
 cd backend
 go run ./cmd/server
 ```
 
-Frontend: http://127.0.0.1:3000
-Backend: http://127.0.0.1:8080
-Health check: http://127.0.0.1:8080/api/health
+Default backend address:
 
----
+```text
+http://127.0.0.1:8080
+```
 
-## Browser Support
+Available API routes:
 
-| Browser | Status |
-|---------|--------|
-| Chrome / Edge 90+ | Fully supported |
-| Firefox 90+ | Fully supported |
-| Safari 15+ | Fully supported |
-| Mobile browsers | Fully supported |
+| Route | Description |
+| --- | --- |
+| `GET /api/health` | Returns backend health status. |
+| `GET /api/version` | Returns configured backend version. |
 
-> ONNX Runtime Web requires WebAssembly and WebGL. Available in all modern browsers.
+## Privacy Model
 
----
+Image Studio Pro is built around a local-first editing model. Core image operations use browser APIs and operate on image data already loaded into the page. AI background removal is performed through browser-side inference rather than a hosted editing API.
 
-## Roadmap
+There are no user accounts, upload queues, or watermarking flows in the editor.
 
-- Filters and adjustments (brightness, contrast, saturation, blur)
-- Text and annotation overlay
-- Batch processing
-- PWA support (install as desktop app)
-- Dark mode
-- Touch gestures for mobile crop and resize
+## Development Commands
 
----
+Frontend:
 
-## Contributing
+```bash
+cd frontend
+npm run dev
+npm run build
+npm run generate
+npm run typecheck
+```
 
-This project was born from one person is frustration - but it does not have to stay that way. If you believe image tools should be free, private, and non-degrading, PRs are genuinely welcome.
+Backend:
 
-1. Fork the repo
-2. Create a feature branch
-3. Make your changes
-4. Open a PR
+```bash
+cd backend
+go test ./...
+go run ./cmd/server
+```
 
----
+## Notes
+
+- Large AI model assets may be loaded by the browser when using background removal.
+- Browser support depends on modern Canvas, WebAssembly, and WebGL capabilities.
+- The frontend is currently configured as a client-side Nuxt app (`ssr: false`).
 
 ## License
 
-MIT - do whatever you want. Just do not charge people for basic image editing.
-
----
-
-<p align="center">
-  <sub>Made with frustration and caffeine. No images were uploaded in the making of this tool.</sub>
-</p>
+MIT. See the repository license for details.
