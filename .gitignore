@@ -7,3 +7,4 @@ node_modules/
 dist/
 backend/*.exe
 backend/server
+backend/server.exe~

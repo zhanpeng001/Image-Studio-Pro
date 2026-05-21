@@ -4,6 +4,7 @@ import { $ } from '../dom.js';
 import { fitImage, renderAll, renderRotatePreview } from '../canvas.js';
 import { pushHistory } from '../history.js';
 import { toast } from '../ui.js';
+import JSZip from 'jszip';
 
 const COMMON_ANGLES = [-180, -90, -45, 0, 45, 90, 180];
 const SNAP_THRESHOLD = 3;
@@ -17,6 +18,7 @@ function snapAngle(deg) {
 
 export function renderRotatePanel(p) {
   const currentAngle = S.rotate.previewActive ? S.rotate.previewAngle : 0;
+  const snapshotCount = S.rotate.snapshots.length;
   p.innerHTML = `
     <h3>Rotate & Flip</h3>
     <div class="col"><label>Quick Presets</label>
@@ -47,6 +49,20 @@ export function renderRotatePanel(p) {
       </div>
     </div>
     <button class="btn primary btn-block" id="rotApply">Apply Rotation</button>
+    <button class="btn btn-block" id="rotSaveSnapshot">Save Snapshot</button>
+    <div class="rotate-snapshot-strip">
+      <div>
+        <strong>${snapshotCount}</strong>
+        <span>${snapshotCount === 1 ? 'saved angle' : 'saved angles'}</span>
+      </div>
+      <div class="rotate-snapshot-actions">
+        <button class="btn btn-sm" id="rotClearAll" ${snapshotCount === 0 ? 'disabled' : ''}>Clear</button>
+        <button class="btn btn-sm" id="rotDownloadAll" ${snapshotCount === 0 ? 'disabled' : ''}>Download All</button>
+      </div>
+    </div>
+    <div class="rotate-snapshot-list" id="rotSnapshotList">
+      ${renderSnapshotList()}
+    </div>
     <div class="divider"></div>
     <div class="col"><label>Flip</label>
       <div class="row">
@@ -107,8 +123,36 @@ export function renderRotatePanel(p) {
   };
 
   $('rotApply').onclick = commitRotation;
+  $('rotSaveSnapshot').onclick = () => saveRotationSnapshot(p);
+  $('rotClearAll').onclick = () => clearRotationSnapshots(p);
+  $('rotDownloadAll').onclick = downloadRotationSnapshots;
   $('flipH').onclick = flipH;
   $('flipV').onclick = flipV;
+
+  const list = $('rotSnapshotList');
+  if (list) {
+    list.addEventListener('click', e => {
+      const btn = e.target.closest('[data-delete-snapshot]');
+      if (!btn) return;
+      deleteRotationSnapshot(+btn.dataset.deleteSnapshot, p);
+    });
+  }
+}
+
+function renderSnapshotList() {
+  if (S.rotate.snapshots.length === 0) {
+    return '<div class="rotate-snapshot-empty">Saved snapshots will appear here.</div>';
+  }
+  return S.rotate.snapshots.map((snap, idx) => `
+    <div class="rotate-snapshot-item">
+      <img src="${snap.dataURL}" alt="">
+      <div class="rotate-snapshot-meta">
+        <strong>Snapshot ${idx + 1}</strong>
+        <span>${formatAngle(snap.angle)}&deg; &middot; ${snap.width}x${snap.height}</span>
+      </div>
+      <button class="btn btn-icon danger" data-delete-snapshot="${snap.id}" title="Delete snapshot" aria-label="Delete snapshot">&times;</button>
+    </div>
+  `).join('');
 }
 
 function setAngle(deg) {
@@ -130,19 +174,25 @@ function startLivePreview(deg) {
   renderRotatePreview(deg);
 }
 
+function getCurrentAngle() {
+  if (S.rotate.previewActive) return S.rotate.previewAngle;
+  const input = $('angInput');
+  if (!input) return 0;
+  const deg = parseFloat(input.value);
+  return Number.isFinite(deg) ? Math.max(-180, Math.min(180, deg)) : 0;
+}
+
+function formatAngle(deg) {
+  return Number.isInteger(deg) ? String(deg) : String(Math.round(deg * 10) / 10);
+}
+
 export function commitRotation() {
-  let deg = S.rotate.previewAngle;
-  if (!S.rotate.previewActive) {
-    const slider = $('angSlider');
-    deg = slider ? +slider.value : 0;
-  }
+  let deg = getCurrentAngle();
   resetRotatePreview();
   applyRotation(deg);
 }
 
-function applyRotation(deg) {
-  if (!S.img) return;
-  pushHistory('Rotate ' + deg + '\u00B0');
+function renderRotatedCanvas(deg) {
   const rad = deg * Math.PI / 180;
   const iw = S.img.width, ih = S.img.height;
   const c = Math.abs(Math.cos(rad)), s = Math.abs(Math.sin(rad));
@@ -155,10 +205,75 @@ function applyRotation(deg) {
   const tx = tmp.getContext('2d');
   tx.translate(nw / 2, nh / 2); tx.rotate(rad);
   tx.drawImage(S.img, -iw / 2, -ih / 2);
+  return tmp;
+}
+
+function applyRotation(deg) {
+  if (!S.img) return;
+  pushHistory('Rotate ' + deg + '\u00B0');
+  const tmp = renderRotatedCanvas(deg);
 
   const nimg = new Image();
   nimg.onload = () => { S.img = nimg; fitImage(); renderAll(); toast('Rotated ' + deg + '\u00B0'); };
   nimg.src = tmp.toDataURL('image/png');
+}
+
+function saveRotationSnapshot(p) {
+  if (!S.img) return;
+  const deg = getCurrentAngle();
+  const tmp = renderRotatedCanvas(deg);
+  S.rotate.snapshots.push({
+    id: S.rotate.nextSnapshotId++,
+    angle: deg,
+    width: tmp.width,
+    height: tmp.height,
+    dataURL: tmp.toDataURL('image/png'),
+    createdAt: Date.now(),
+  });
+  renderRotatePanel(p);
+  toast('Snapshot saved: ' + formatAngle(deg) + '\u00B0');
+}
+
+function deleteRotationSnapshot(id, p) {
+  const before = S.rotate.snapshots.length;
+  S.rotate.snapshots = S.rotate.snapshots.filter(s => s.id !== id);
+  if (S.rotate.snapshots.length !== before) {
+    renderRotatePanel(p);
+    toast('Snapshot deleted');
+  }
+}
+
+function clearRotationSnapshots(p) {
+  if (S.rotate.snapshots.length === 0) return;
+  S.rotate.snapshots = [];
+  renderRotatePanel(p);
+  toast('Snapshots cleared');
+}
+
+async function downloadRotationSnapshots() {
+  if (S.rotate.snapshots.length === 0) {
+    toast('No snapshots to download');
+    return;
+  }
+
+  toast('Building ZIP with ' + S.rotate.snapshots.length + ' snapshots...');
+  const zip = new JSZip();
+  const baseName = S.fname.replace(/\.[^.]+$/, '') || 'image';
+
+  S.rotate.snapshots.forEach((snap, idx) => {
+    const angle = formatAngle(snap.angle).replace('-', 'neg').replace('.', 'p');
+    const b64 = snap.dataURL.split(',')[1];
+    zip.file(baseName + '_rotate_' + String(idx + 1).padStart(2, '0') + '_' + angle + 'deg.png', b64, { base64: true });
+  });
+
+  const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = baseName + '_rotation_snapshots.zip';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('ZIP downloaded: ' + S.rotate.snapshots.length + ' snapshots');
 }
 
 export function applyRotationFromKeyboard() {

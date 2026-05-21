@@ -345,6 +345,87 @@ body {
 .preset:hover { border-color:var(--accent); color:var(--accent); }
 .preset.active { background:var(--accent2); border-color:var(--accent2); color:#fff; }
 
+/* ROTATE SNAPSHOTS */
+.rotate-snapshot-strip {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:8px;
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+}
+.rotate-snapshot-strip strong {
+  display:block;
+  font-size:18px;
+  line-height:1;
+  color:var(--text);
+}
+.rotate-snapshot-strip span {
+  display:block;
+  margin-top:2px;
+  font-size:11px;
+  color:var(--text2);
+}
+.rotate-snapshot-actions {
+  display:flex;
+  align-items:center;
+  gap:6px;
+  flex-shrink:0;
+}
+.rotate-snapshot-list {
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  max-height:220px;
+  overflow-y:auto;
+}
+.rotate-snapshot-empty {
+  padding:12px;
+  border:1px dashed var(--border);
+  border-radius:var(--radius);
+  color:var(--text2);
+  font-size:12px;
+  text-align:center;
+}
+.rotate-snapshot-item {
+  display:grid;
+  grid-template-columns:46px minmax(0,1fr) 32px;
+  align-items:center;
+  gap:8px;
+  padding:6px;
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+}
+.rotate-snapshot-item img {
+  width:46px;
+  height:36px;
+  object-fit:contain;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:4px;
+}
+.rotate-snapshot-meta {
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.rotate-snapshot-meta strong {
+  color:var(--text);
+  font-size:12px;
+  font-weight:600;
+}
+.rotate-snapshot-meta span {
+  color:var(--text2);
+  font-size:11px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
 /* SAVE MODAL */
 .modal-overlay {
   position:fixed;

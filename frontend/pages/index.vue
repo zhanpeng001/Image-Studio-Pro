@@ -26,6 +26,7 @@
         <button class="side-btn" data-tool="bgremove" title="Background Removal"><span>BG Remove</span></button>
         <button class="side-btn" data-tool="rotate" title="Rotate & Flip"><span>Rotate</span></button>
         <button class="side-btn" data-tool="compressor" title="Compress"><span>Compress</span></button>
+        <button class="side-btn" data-tool="canva" title="Canva"><span>Canva</span></button>
       </nav>
 
       <main class="canvas-area" id="canvasArea">

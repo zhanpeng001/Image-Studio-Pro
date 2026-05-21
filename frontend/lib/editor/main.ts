@@ -11,6 +11,7 @@ import { renderGridPanel, setupGridEvents } from './tools/grid.js';
 import { renderBGPanel } from './tools/bgremove.js';
 import { renderRotatePanel, commitRotation, applyRotationFromKeyboard } from './tools/rotate.js';
 import { renderCompressorPanel } from './tools/compressor.js';
+import { renderCanvaPanel, cleanupCanvaEvents, canvaMergeAll, canvaDeselect, canvaRemoveLayer, canvaFitZoom, canvaActualZoom, canvaHandleResize } from './tools/canva.js';
 
 let initialized = false;
 let cleanupEditor = () => {};
@@ -23,7 +24,8 @@ const toolPanels = {
   grid: renderGridPanel,
   bgremove: renderBGPanel,
   rotate: renderRotatePanel,
-  compressor: renderCompressorPanel
+  compressor: renderCompressorPanel,
+  canva: renderCanvaPanel
 };
 
 const toolStatusLabels = {
@@ -32,8 +34,19 @@ const toolStatusLabels = {
   grid: 'Grid Split',
   bgremove: 'BG Remove',
   rotate: 'Rotate & Flip',
-  compressor: 'Compressor'
+  compressor: 'Compressor',
+  canva: 'Canva'
 };
+
+function drawCheckerboard() {
+  const size = 16;
+  for (let y = 0; y < mc.height; y += size) {
+    for (let x = 0; x < mc.width; x += size) {
+      ctx.fillStyle = ((x / size + y / size) % 2 === 0) ? '#eee' : '#fff';
+      ctx.fillRect(x, y, size, size);
+    }
+  }
+}
 
 function switchTool(tool) {
   // Discard uncommitted tool previews and restore canvas when switching tools
@@ -49,9 +62,31 @@ function switchTool(tool) {
   if (S.tool === 'grid') {
     S.grid.drag = null;
   }
+  if (S.tool === 'canva') {
+    cleanupCanvaEvents();
+  }
 
   if (S.img && changingTool) {
-    renderAll();
+    if (tool === 'canva') {
+      // Canva draws all layers (including base) on overlay canvas — clear main canvas
+      ctx.clearRect(0, 0, mc.width, mc.height);
+      drawCheckerboard();
+    } else if (S.tool === 'canva') {
+      // Leaving canva — restore base image on main canvas
+      S.canva.layers = [];
+      S.canva.selectedIdx = -1;
+      S.canva.zoom = 1;
+      S.canva.workspaceW = 0;
+      S.canva.workspaceH = 0;
+      cleanupCanvaEvents();
+      canvasArea.style.overflow = 'hidden';
+      canvasArea.style.alignItems = 'center';
+      canvasArea.style.justifyContent = 'center';
+      fitImage();
+      renderAll();
+    } else {
+      renderAll();
+    }
   }
 
   S.tool = tool;
@@ -114,7 +149,10 @@ function loadFile(file) {
   S.history = []; S.redoHistory = []; S.histIdx = -1; updateUndoRedoButtons();
   S.grid.hLines = []; S.grid.vLines = []; S.grid.hCh = false; S.grid.vCh = false;
   S.crop = { x:0, y:0, w:0, h:0, dragging:false, dragCorner:null, aspect:null, moving:false, moveStartX:0, moveStartY:0, moveOrigX:0, moveOrigY:0 };
+  S.canva.layers = []; S.canva.selectedIdx = -1; S.canva.workspaceW = 0; S.canva.workspaceH = 0;
   S.rotate.angle = 0;
+  S.rotate.snapshots = [];
+  S.rotate.nextSnapshotId = 1;
   resetRotatePreview();
 
   const r = new FileReader();
@@ -122,7 +160,13 @@ function loadFile(file) {
     const img = new Image();
     img.onload = () => {
       S.img = img; S.origImg = img;
-      fitImage(); renderAll();
+      fitImage();
+      if (S.tool === 'canva') {
+        ctx.clearRect(0, 0, mc.width, mc.height);
+        drawCheckerboard();
+      } else {
+        renderAll();
+      }
       dropzone.style.display = 'none';
       canvasWrap.style.display = 'block';
       updateStatus();
@@ -149,20 +193,27 @@ function setupTopbar(signal) {
   $('btnRedo').addEventListener('click', redo, { signal });
   $('btnSave').addEventListener('click', openSaveDialog, { signal });
   $('btnFit').addEventListener('click', () => {
-    if (S.img) {
-      if (S.rotate.previewActive) resetRotatePreview();
-      fitImage(); renderAll(); switchTool(S.tool);
+    if (!S.img) return;
+    if (S.rotate.previewActive) resetRotatePreview();
+    if (S.tool === 'canva') {
+      canvaFitZoom();
+    } else {
+      fitImage(); renderAll();
     }
   }, { signal });
   $('btnActual').addEventListener('click', () => {
     if (!S.img) return;
     if (S.rotate.previewActive) resetRotatePreview();
-    S.viewW = S.img.width; S.viewH = S.img.height; S.zoom = 1;
-    mc.width = S.img.width; mc.height = S.img.height;
-    oc.width = S.img.width; oc.height = S.img.height;
-    mc.style.width = S.img.width + 'px'; mc.style.height = S.img.height + 'px';
-    oc.style.width = S.img.width + 'px'; oc.style.height = S.img.height + 'px';
-    renderAll(); switchTool(S.tool);
+    if (S.tool === 'canva') {
+      canvaActualZoom();
+    } else {
+      S.viewW = S.img.width; S.viewH = S.img.height; S.zoom = 1;
+      mc.width = S.img.width; mc.height = S.img.height;
+      oc.width = S.img.width; oc.height = S.img.height;
+      mc.style.width = S.img.width + 'px'; mc.style.height = S.img.height + 'px';
+      oc.style.width = S.img.width + 'px'; oc.style.height = S.img.height + 'px';
+      renderAll();
+    }
   }, { signal });
 }
 
@@ -181,6 +232,7 @@ function handleToolKeys(e) {
     e.preventDefault();
     if (S.tool === 'crop') applyCropFromKeyboard();
     else if (S.tool === 'rotate') applyRotationFromKeyboard();
+    else if (S.tool === 'canva') canvaMergeAll();
   }
   if ((e.key === 'Escape' || e.key === 'Delete') && document.activeElement === document.body) {
     e.preventDefault();
@@ -191,6 +243,9 @@ function handleToolKeys(e) {
       resetRotatePreview();
       renderAll();
       clearOverlay();
+    } else if (S.tool === 'canva') {
+      if (e.key === 'Escape') canvaDeselect();
+      else if (e.key === 'Delete') canvaRemoveLayer();
     }
   }
 }
@@ -218,6 +273,9 @@ function restoreMountedImage() {
   fitImage();
   if (S.rotate.previewActive) {
     renderRotatePreview(S.rotate.previewAngle);
+  } else if (S.tool === 'canva') {
+    ctx.clearRect(0, 0, mc.width, mc.height);
+    drawCheckerboard();
   } else {
     renderAll();
   }
@@ -231,6 +289,10 @@ function handleResize() {
     fitImage();
     if (S.rotate.previewActive) {
       renderRotatePreview(S.rotate.previewAngle);
+    } else if (S.tool === 'canva') {
+      ctx.clearRect(0, 0, mc.width, mc.height);
+      drawCheckerboard();
+      canvaHandleResize();
     } else {
       ctx.clearRect(0, 0, mc.width, mc.height);
       ctx.drawImage(S.img, 0, 0, mc.width, mc.height);
