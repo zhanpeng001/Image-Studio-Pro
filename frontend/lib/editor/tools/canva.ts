@@ -258,7 +258,11 @@ function openLayerFilePicker() {
 
 // ==================== LAYER HELPERS ====================
 function createLayer(img, x, y, w, h): any {
-  return { img, x, y, w, h, angle: 0, opacity: 1, ratioLocked: false, ratio: w / h };
+  return { img, x, y, w, h, angle: 0, opacity: 1, ratioLocked: false, ratio: w / h, type: 'image', text: '', fontSize: 24, fontColor: '#ffffff' };
+}
+
+function createTextLayer(x: number, y: number, w: number, h: number): any {
+  return { img: null, x, y, w, h, angle: 0, opacity: 1, ratioLocked: false, ratio: w / h, type: 'text', text: '', fontSize: 24, fontColor: '#ffffff' };
 }
 
 function loadOverlayLayer(file) {

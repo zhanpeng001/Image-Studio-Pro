@@ -43,7 +43,7 @@ export interface GridState {
 }
 
 export interface CanvaLayer {
-  img: HTMLImageElement;
+  img: HTMLImageElement | null;
   x: number;
   y: number;
   w: number;
@@ -52,6 +52,10 @@ export interface CanvaLayer {
   opacity: number;
   ratioLocked: boolean;
   ratio: number;
+  type: 'image' | 'text';
+  text: string;
+  fontSize: number;
+  fontColor: string;
 }
 
 export interface CanvaState {
