@@ -107,6 +107,19 @@ export function renderCanvaPanel(p) {
   // Selected layer controls
   html += '<div id="canvaSelControls" style="display:' + (sel ? 'flex' : 'none') + ';flex-direction:column;gap:8px;">';
 
+  // Text-specific controls (only for text layers)
+  const isText = sel && sel.type === 'text';
+  html += '<div id="canvaTextControls" style="display:' + (isText ? 'flex' : 'none') + ';flex-direction:column;gap:8px;">';
+  html += '<div class="col"><label>Font Size</label>';
+  html += '<input type="number" id="canvaFontSize" value="' + (isText ? sel.fontSize : 24) + '" min="8" max="512" style="width:100%;"></div>';
+  html += '<div class="col"><label>Text Color</label>';
+  html += '<div class="row" style="align-items:center;gap:8px;">';
+  html += '<input type="color" id="canvaFontColor" value="' + (isText ? sel.fontColor : '#ffffff') + '" style="width:36px;height:36px;border:none;border-radius:4px;cursor:pointer;padding:0;">';
+  html += '<span id="canvaFontColorHex" style="font-size:12px;color:var(--text3);">' + (isText ? sel.fontColor : '#ffffff') + '</span>';
+  html += '</div></div>';
+  html += '<div class="divider" id="canvaTextDivider" style="display:' + (isText ? 'block' : 'none') + ';"></div>';
+  html += '</div>'; // end canvaTextControls
+
   html += '<div class="col"><label>Opacity: <span class="val" id="canvaOpacityVal">' + (sel ? Math.round(sel.opacity * 100) + '%' : '100%') + '</span></label>';
   html += '<input type="range" id="canvaOpacity" min="5" max="100" value="' + (sel ? Math.round(sel.opacity * 100) : 100) + '"></div>';
 
@@ -119,7 +132,10 @@ export function renderCanvaPanel(p) {
 
   // Buttons
   html += '<div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;">';
-  html += '<button class="btn primary btn-block" id="canvaAddLayer">Add Layer</button>';
+  html += '<div class="row" style="gap:4px;">';
+  html += '<button class="btn primary btn-block" id="canvaAddLayer" style="flex:1;">Add Image</button>';
+  html += '<button class="btn primary btn-block" id="canvaAddText" style="flex:1;">Add Text</button>';
+  html += '</div>';
   html += '<button class="btn btn-block" id="canvaRemoveLayer"' + (c.selectedIdx <= 0 ? ' disabled' : '') + '>Remove Layer</button>';
   html += '<div class="row" style="gap:4px;">';
   html += '<button class="btn btn-block" id="canvaSendBackward" title="Send backward"' + (c.selectedIdx <= 0 ? ' disabled' : '') + '>Back</button>';
@@ -175,6 +191,28 @@ export function renderCanvaPanel(p) {
 
   const addBtn = document.getElementById('canvaAddLayer');
   if (addBtn) addBtn.onclick = () => openLayerFilePicker();
+
+  const addTextBtn = document.getElementById('canvaAddText');
+  if (addTextBtn) addTextBtn.onclick = () => addTextLayer();
+
+  const fontSizeInput = document.getElementById('canvaFontSize');
+  if (fontSizeInput && sel && sel.type === 'text') {
+    fontSizeInput.oninput = () => {
+      sel.fontSize = Math.max(8, Math.min(512, +fontSizeInput.value || 24));
+      fontSizeInput.value = sel.fontSize;
+      showTextOverlay();
+    };
+  }
+
+  const fontColorInput = document.getElementById('canvaFontColor');
+  if (fontColorInput && sel && sel.type === 'text') {
+    fontColorInput.oninput = () => {
+      sel.fontColor = fontColorInput.value;
+      const hexEl = document.getElementById('canvaFontColorHex');
+      if (hexEl) hexEl.textContent = fontColorInput.value;
+      showTextOverlay();
+    };
+  }
 
   const removeBtn = document.getElementById('canvaRemoveLayer');
   if (removeBtn) {
@@ -265,6 +303,26 @@ function openLayerFilePicker() {
     input.remove();
   });
   input.click();
+}
+
+function addTextLayer() {
+  const c = S.canva;
+  if (c.workspaceW === 0) return;
+  const canvasArea = document.getElementById('canvasArea')!;
+  const viewCX = (canvasArea.scrollLeft + canvasArea.clientWidth / 2) / c.zoom;
+  const viewCY = (canvasArea.scrollTop + canvasArea.clientHeight / 2) / c.zoom;
+  const w = 300;
+  const h = 60;
+  const x = Math.round(viewCX - w / 2);
+  const y = Math.round(viewCY - h / 2);
+  const layer = createTextLayer(x, y, w, h);
+  c.layers.push(layer);
+  c.selectedIdx = c.layers.length - 1;
+  drawCanvaAll();
+  const panel = document.getElementById('panel');
+  if (panel) renderCanvaPanel(panel);
+  setTimeout(() => { showTextOverlay(); enterTextEdit(); }, 50);
+  toast('Text layer added — type to edit');
 }
 
 // ==================== LAYER HELPERS ====================
