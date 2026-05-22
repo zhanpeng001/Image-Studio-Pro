@@ -381,6 +381,24 @@ function hideTextOverlay() {
   textOverlayEditing = false;
 }
 
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+  const words = text.split(' ');
+  const lines: string[] = [];
+  let currentLine = '';
+  for (const word of words) {
+    const testLine = currentLine ? currentLine + ' ' + word : word;
+    const metrics = ctx.measureText(testLine);
+    if (metrics.width > maxWidth && currentLine) {
+      lines.push(currentLine);
+      currentLine = word;
+    } else {
+      currentLine = testLine;
+    }
+  }
+  if (currentLine) lines.push(currentLine);
+  return lines.length > 0 ? lines : [''];
+}
+
 function loadOverlayLayer(file) {
   if (!file.type.startsWith('image/')) { toast('Not an image file'); return; }
   const reader = new FileReader();
@@ -558,7 +576,23 @@ function drawCanvaAll() {
     octx.translate(cx, cy);
     octx.rotate(layer.angle * Math.PI / 180);
     octx.globalAlpha = layer.opacity;
-    octx.drawImage(layer.img, -w / 2, -h / 2, w, h);
+
+    if (layer.type === 'text') {
+      octx.font = (layer.fontSize * zoom) + 'px sans-serif';
+      octx.fillStyle = layer.fontColor;
+      octx.textBaseline = 'top';
+      const padding = 4 * zoom;
+      const lines = wrapText(octx, layer.text || '', w - padding * 2);
+      const lineHeight = layer.fontSize * zoom * 1.3;
+      for (let li = 0; li < lines.length; li++) {
+        const ly = padding + li * lineHeight;
+        if (ly + lineHeight > h) break;
+        octx.fillText(lines[li], padding, ly);
+      }
+    } else if (layer.img) {
+      octx.drawImage(layer.img, -w / 2, -h / 2, w, h);
+    }
+
     octx.restore();
   }
 
