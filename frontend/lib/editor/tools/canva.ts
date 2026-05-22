@@ -145,7 +145,7 @@ export function renderCanvaPanel(p) {
   html += '<button class="btn btn-block" id="canvaMergeAll" style="background:var(--success);color:#fff;">Merge All & Flatten</button>';
   html += '</div>';
 
-  html += '<p class="hint" style="margin-top:8px;">Click to select. Drag to move. Corner/edge handles to resize. Top handle to rotate. Double-click or Enter to merge.</p>';
+  html += '<p class="hint" style="margin-top:8px;">Click to select & move. Double-click text to edit. Corner/edge handles to resize. Top handle to rotate. Enter to merge.</p>';
 
   p.innerHTML = html;
 
@@ -516,12 +516,39 @@ function setupCanvaEvents() {
   oc.addEventListener('mouseleave', onUp);
   oc.addEventListener('wheel', onWheel, { passive: false });
 
+  const onDblClick = (e) => {
+    const c = S.canva;
+    const { mx, my } = getPos(e);
+    if (c.selectedIdx >= 0) {
+      const sel = c.layers[c.selectedIdx];
+      if (sel.type === 'text' && isInsideLayer(mx, my, sel)) {
+        e.preventDefault();
+        enterTextEdit();
+        return;
+      }
+    }
+    for (let i = c.layers.length - 1; i >= 0; i--) {
+      if (isInsideLayer(mx, my, c.layers[i])) {
+        if (c.layers[i].type === 'text') {
+          c.selectedIdx = i;
+          drawCanvaAll();
+          const panel = document.getElementById('panel');
+          if (panel) renderCanvaPanel(panel);
+          setTimeout(() => enterTextEdit(), 50);
+        }
+        return;
+      }
+    }
+  };
+  oc.addEventListener('dblclick', onDblClick);
+
   cleanupEvents = () => {
     oc.removeEventListener('mousedown', onDown);
     oc.removeEventListener('mousemove', onMove);
     oc.removeEventListener('mouseup', onUp);
     oc.removeEventListener('mouseleave', onUp);
     oc.removeEventListener('wheel', onWheel);
+    oc.removeEventListener('dblclick', onDblClick);
     S.canva.dragging = false;
     S.canva.moving = false;
     S.canva.panning = false;
@@ -813,14 +840,12 @@ function canvaDown(e) {
     }
   }
 
-  // Clicked empty space — start panning
-  c.panning = true;
-  c.moveStartX = e.clientX;
-  c.moveStartY = e.clientY;
-  const canvasAreaEl2 = document.getElementById('canvasArea')!;
-  c.moveOrigX = canvasAreaEl2.scrollLeft;
-  c.moveOrigY = canvasAreaEl2.scrollTop;
-  oc.style.cursor = 'grabbing';
+  // Clicked empty space — deselect
+  c.selectedIdx = -1;
+  hideTextOverlay();
+  drawCanvaAll();
+  const panel = document.getElementById('panel');
+  if (panel) renderCanvaPanel(panel);
 }
 
 function canvaMove(e) {
