@@ -1113,13 +1113,26 @@ async function mergeAllLayers() {
     outCtx.translate(cx, cy);
     outCtx.rotate(layer.angle * Math.PI / 180);
     outCtx.globalAlpha = layer.opacity;
-    outCtx.drawImage(
-      layer.img,
-      -layer.w * scaleX / 2,
-      -layer.h * scaleY / 2,
-      layer.w * scaleX,
-      layer.h * scaleY,
-    );
+
+    const lw = layer.w * scaleX;
+    const lh = layer.h * scaleY;
+
+    if (layer.type === 'text') {
+      outCtx.font = (layer.fontSize * scaleX) + 'px sans-serif';
+      outCtx.fillStyle = layer.fontColor;
+      outCtx.textBaseline = 'top';
+      const padding = 4 * scaleX;
+      const lines = wrapText(outCtx, layer.text || '', lw - padding * 2);
+      const lineHeight = layer.fontSize * scaleX * 1.3;
+      for (let li = 0; li < lines.length; li++) {
+        const ly = padding + li * lineHeight;
+        if (ly + lineHeight > lh) break;
+        outCtx.fillText(lines[li], padding, ly);
+      }
+    } else if (layer.img) {
+      outCtx.drawImage(layer.img, -lw / 2, -lh / 2, lw, lh);
+    }
+
     outCtx.restore();
   }
 

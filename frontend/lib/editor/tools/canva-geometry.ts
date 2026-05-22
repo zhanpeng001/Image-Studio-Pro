@@ -29,8 +29,8 @@ function layerCorners(layer) {
 
 export function computeCanvaMergeGeometry(layers) {
   const base = layers[0];
-  const baseW = imageWidth(base.img);
-  const baseH = imageHeight(base.img);
+  const baseW = imageWidth(base.img) || base.w || 1;
+  const baseH = imageHeight(base.img) || base.h || 1;
   const scaleX = baseW / (base.w || 1);
   const scaleY = baseH / (base.h || 1);
 
