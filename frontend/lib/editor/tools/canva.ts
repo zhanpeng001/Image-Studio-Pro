@@ -240,6 +240,17 @@ export function renderCanvaPanel(p) {
 
   setupCanvaEvents();
   drawCanvaAll();
+
+  // Sync text overlay
+  const sel = c.selectedIdx >= 0 ? c.layers[c.selectedIdx] : null;
+  if (sel && sel.type === 'text') {
+    showTextOverlay();
+    if (!sel.text && !textOverlayEditing) {
+      enterTextEdit();
+    }
+  } else {
+    hideTextOverlay();
+  }
 }
 
 function openLayerFilePicker() {
@@ -263,6 +274,111 @@ function createLayer(img, x, y, w, h): any {
 
 function createTextLayer(x: number, y: number, w: number, h: number): any {
   return { img: null, x, y, w, h, angle: 0, opacity: 1, ratioLocked: false, ratio: w / h, type: 'text', text: '', fontSize: 24, fontColor: '#ffffff' };
+}
+
+// ==================== TEXT OVERLAY ====================
+let textOverlay: HTMLDivElement | null = null;
+let textOverlayEditing = false;
+
+function getTextOverlay(): HTMLDivElement {
+  if (!textOverlay) {
+    textOverlay = document.createElement('div');
+    textOverlay.id = 'canvaTextOverlay';
+    textOverlay.contentEditable = 'false';
+    textOverlay.style.cssText = 'position:absolute;display:none;z-index:10;pointer-events:none;outline:none;overflow:hidden;word-wrap:break-word;white-space:pre-wrap;font-family:sans-serif;line-height:1.3;border:2px dashed #58a6ff;border-radius:2px;background:transparent;';
+    const canvasAreaEl = document.getElementById('canvasArea')!;
+    canvasAreaEl.style.position = canvasAreaEl.style.position || 'relative';
+    canvasAreaEl.appendChild(textOverlay);
+
+    textOverlay.addEventListener('input', () => {
+      const c = S.canva;
+      if (c.selectedIdx >= 0) {
+        const sel = c.layers[c.selectedIdx];
+        if (sel.type === 'text') {
+          sel.text = textOverlay!.textContent || '';
+        }
+      }
+    });
+
+    textOverlay.addEventListener('blur', () => {
+      exitTextEdit();
+    });
+  }
+  return textOverlay;
+}
+
+function showTextOverlay() {
+  const overlay = getTextOverlay();
+  const c = S.canva;
+  if (c.selectedIdx < 0) { overlay.style.display = 'none'; return; }
+  const sel = c.layers[c.selectedIdx];
+  if (sel.type !== 'text') { overlay.style.display = 'none'; return; }
+
+  const canvasAreaEl = document.getElementById('canvasArea')!;
+  const zoom = c.zoom;
+  const left = sel.x * zoom - canvasAreaEl.scrollLeft;
+  const top = sel.y * zoom - canvasAreaEl.scrollTop;
+  const w = sel.w * zoom;
+  const h = sel.h * zoom;
+
+  overlay.style.display = 'block';
+  overlay.style.left = left + 'px';
+  overlay.style.top = top + 'px';
+  overlay.style.width = w + 'px';
+  overlay.style.height = h + 'px';
+  overlay.style.fontSize = (sel.fontSize * zoom) + 'px';
+  overlay.style.color = sel.fontColor;
+  overlay.style.padding = (4 * zoom) + 'px';
+  overlay.style.borderWidth = (2 * zoom) + 'px';
+
+  if (sel.angle !== 0) {
+    overlay.style.transformOrigin = 'center center';
+    overlay.style.transform = `rotate(${sel.angle}deg)`;
+  } else {
+    overlay.style.transform = '';
+  }
+
+  if (!textOverlayEditing) {
+    overlay.textContent = sel.text || '';
+    overlay.contentEditable = 'false';
+    overlay.style.pointerEvents = 'none';
+  }
+}
+
+function enterTextEdit() {
+  const overlay = getTextOverlay();
+  const c = S.canva;
+  if (c.selectedIdx < 0) return;
+  const sel = c.layers[c.selectedIdx];
+  if (sel.type !== 'text') return;
+
+  textOverlayEditing = true;
+  overlay.contentEditable = 'true';
+  overlay.style.pointerEvents = 'auto';
+  overlay.textContent = sel.text || '';
+  overlay.focus();
+
+  if (!sel.text) {
+    const range = document.createRange();
+    range.selectNodeContents(overlay);
+    const sel2 = window.getSelection();
+    sel2?.removeAllRanges();
+    sel2?.addRange(range);
+  }
+}
+
+function exitTextEdit() {
+  const overlay = getTextOverlay();
+  textOverlayEditing = false;
+  overlay.contentEditable = 'false';
+  overlay.style.pointerEvents = 'none';
+}
+
+function hideTextOverlay() {
+  if (textOverlay) {
+    textOverlay.style.display = 'none';
+  }
+  textOverlayEditing = false;
 }
 
 function loadOverlayLayer(file) {
@@ -449,6 +565,11 @@ function drawCanvaAll() {
   // Draw selection UI for selected layer
   if (c.selectedIdx >= 0 && c.selectedIdx < c.layers.length) {
     drawSelectionUI(c.layers[c.selectedIdx]);
+  }
+
+  // Re-sync overlay position after redraw (zoom/scroll may have changed)
+  if (c.selectedIdx >= 0 && c.layers[c.selectedIdx]?.type === 'text') {
+    showTextOverlay();
   }
 }
 
