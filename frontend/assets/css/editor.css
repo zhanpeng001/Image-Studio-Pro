@@ -1045,3 +1045,32 @@ body {
     right:314px;
   }
 }
+
+/* Canva text overlay */
+#canvaTextOverlay {
+  box-sizing: border-box;
+  cursor: text;
+  border-radius: 3px;
+  letter-spacing: 0;
+}
+
+#canvaTextOverlay:focus {
+  border-style: solid;
+  border-color: #58a6ff;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Text panel controls */
+#canvaFontSize {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text1);
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+#canvaFontSize:focus {
+  outline: none;
+  border-color: var(--accent);
+}
