@@ -427,18 +427,39 @@ function applyCrop() {
   pushHistory('Crop');
 
   const scale = S.img.width / S.viewW;
-  const sx = Math.round(c.x * scale), sy = Math.round(c.y * scale);
-  const sw = Math.round(c.w * scale), sh = Math.round(c.h * scale);
+  const sx = Math.round((c.x - c.expand) * scale);
+  const sy = Math.round((c.y - c.expand) * scale);
+  const sw = Math.round(c.w * scale);
+  const sh = Math.round(c.h * scale);
 
   const tmp = document.createElement('canvas');
   tmp.width = sw; tmp.height = sh;
-  tmp.getContext('2d').drawImage(S.img, sx, sy, sw, sh, 0, 0, sw, sh);
+  const tctx = tmp.getContext('2d')!;
+
+  // Fill with expand color
+  tctx.fillStyle = c.fillColor;
+  tctx.fillRect(0, 0, sw, sh);
+
+  // Draw the portion of the image that overlaps the crop box
+  const imgDrawX = Math.max(0, -sx);
+  const imgDrawY = Math.max(0, -sy);
+  const imgSrcX = Math.max(0, sx);
+  const imgSrcY = Math.max(0, sy);
+  const imgSrcW = Math.min(S.img.width - imgSrcX, sw - imgDrawX);
+  const imgSrcH = Math.min(S.img.height - imgSrcY, sh - imgDrawY);
+
+  if (imgSrcW > 0 && imgSrcH > 0) {
+    tctx.drawImage(S.img, imgSrcX, imgSrcY, imgSrcW, imgSrcH, imgDrawX, imgDrawY, imgSrcW, imgSrcH);
+  }
 
   const nimg = new Image();
   nimg.onload = () => {
     S.img = nimg;
+    if (S.crop.expand > 0) {
+      restoreCropCanvas();
+    }
     fitImage(); renderAll();
-    S.crop = { x:0, y:0, w:0, h:0, dragging:false, dragCorner:null, aspect:S.crop.aspect, moving:false, moveStartX:0, moveStartY:0, moveOrigX:0, moveOrigY:0 };
+    S.crop = { x:0, y:0, w:0, h:0, dragging:false, dragCorner:null, aspect:S.crop.aspect, moving:false, moveStartX:0, moveStartY:0, moveOrigX:0, moveOrigY:0, expand:0, fillColor:'#FFFFFF', eyedropping:false };
     toast('Cropped to ' + sw + 'x' + sh);
   };
   nimg.src = tmp.toDataURL('image/png');
