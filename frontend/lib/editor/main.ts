@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { S, resetRotatePreview } from './state.js';
 import { $, refreshDomBindings, mc, oc, ctx, panel, dropzone, canvasWrap, canvasArea, statusTool, saveModal } from './dom.js';
-import { fitImage, renderAll, renderRotatePreview } from './canvas.js';
+import { fitImage, renderAll, renderRotatePreview, renderCropExpand, restoreCropCanvas } from './canvas.js';
 import { undo, redo, updateUndoRedoButtons } from './history.js';
 import { clearOverlay, drawCropOverlay, drawGridOverlay } from './overlay.js';
 import { toast, updateStatus, setupKeys, setupShortcutsPanel, setupSaveModal, openSaveDialog } from './ui.js';
@@ -130,6 +130,10 @@ function switchTool(tool) {
     cleanupCanvaEvents();
   }
 
+  if (changingTool && S.tool === 'crop' && S.crop.expand > 0) {
+    restoreCropCanvas();
+  }
+
   if (S.img && changingTool) {
     if (tool === 'canva') {
       // Canva draws all layers (including base) on overlay canvas — clear main canvas
@@ -148,6 +152,8 @@ function switchTool(tool) {
       canvasArea.style.justifyContent = 'center';
       fitImage();
       renderAll();
+    } else if (tool === 'crop' && S.crop.expand > 0) {
+      renderCropExpand();
     } else {
       renderAll();
     }
@@ -212,7 +218,7 @@ function loadFile(file) {
   S.fname = file.name.replace(/\.[^.]+$/, '') + '.png';
   S.history = []; S.redoHistory = []; S.histIdx = -1; updateUndoRedoButtons();
   S.grid.hLines = []; S.grid.vLines = []; S.grid.hCh = false; S.grid.vCh = false;
-  S.crop = { x:0, y:0, w:0, h:0, dragging:false, dragCorner:null, aspect:null, moving:false, moveStartX:0, moveStartY:0, moveOrigX:0, moveOrigY:0 };
+  S.crop = { x:0, y:0, w:0, h:0, dragging:false, dragCorner:null, aspect:null, moving:false, moveStartX:0, moveStartY:0, moveOrigX:0, moveOrigY:0, expand:0, fillColor:'#FFFFFF', eyedropping:false };
   S.canva.layers = []; S.canva.selectedIdx = -1; S.canva.workspaceW = 0; S.canva.workspaceH = 0;
   S.rotate.angle = 0;
   S.rotate.snapshots = [];
@@ -363,7 +369,12 @@ function handleResize() {
       S.origData = ctx.getImageData(0, 0, mc.width, mc.height);
       S.workData = new ImageData(new Uint8ClampedArray(S.origData.data), mc.width, mc.height);
     }
-    if (S.tool === 'crop') drawCropOverlay();
+    if (S.tool === 'crop') {
+      if (S.crop.expand > 0) {
+        renderCropExpand();
+      }
+      drawCropOverlay();
+    }
     else if (S.tool === 'grid') drawGridOverlay();
     updateStatus();
   }
