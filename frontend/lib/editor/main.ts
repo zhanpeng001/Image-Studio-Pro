@@ -5,7 +5,7 @@ import { fitImage, renderAll, renderRotatePreview, renderCropExpand, restoreCrop
 import { undo, redo, updateUndoRedoButtons } from './history.js';
 import { clearOverlay, drawCropOverlay, drawGridOverlay } from './overlay.js';
 import { toast, updateStatus, setupKeys, setupShortcutsPanel, setupSaveModal, openSaveDialog } from './ui.js';
-import { renderCropPanel, setupCropEvents, cleanupCropEvents, applyCropFromKeyboard } from './tools/crop.js';
+import { renderCropPanel, setupCropEvents, cleanupCropEvents, applyCropFromKeyboard, cancelCropEyedropper } from './tools/crop.js';
 import { renderScalePanel } from './tools/scale.js';
 import { renderGridPanel, setupGridEvents } from './tools/grid.js';
 import { renderBGPanel } from './tools/bgremove.js';
@@ -132,10 +132,6 @@ function switchTool(tool) {
   }
   if (S.tool === 'canva') {
     cleanupCanvaEvents();
-  }
-
-  if (changingTool && S.tool === 'crop' && S.crop.expand > 0) {
-    restoreCropCanvas();
   }
 
   if (S.img && changingTool) {
@@ -312,11 +308,7 @@ function handleToolKeys(e) {
     e.preventDefault();
     if (S.tool === 'crop') {
       if (S.crop.eyedropping) {
-        S.crop.eyedropping = false;
-        const eyedropperBtn = document.getElementById('eyedropperBtn');
-        if (eyedropperBtn) eyedropperBtn.classList.remove('active');
-        if (S.crop.w > 0) oc.style.cursor = 'default';
-        else oc.style.cursor = 'crosshair';
+        cancelCropEyedropper();
         return;
       }
       S.crop = { x:0, y:0, w:0, h:0, dragging:false, dragCorner:null, aspect:S.crop.aspect, moving:false, moveStartX:0, moveStartY:0, moveOrigX:0, moveOrigY:0, expand: S.crop.expand, fillColor: S.crop.fillColor, eyedropping: false };

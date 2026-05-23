@@ -245,6 +245,7 @@ export function renderCropPanel(p) {
   };
 
   expandReset.onclick = () => {
+    deactivateEyedropper();
     S.crop.expand = 0;
     S.crop.fillColor = '#FFFFFF';
     expandVal.textContent = '0 px';
@@ -254,6 +255,14 @@ export function renderCropPanel(p) {
     renderAll();
     drawCropOverlay();
   };
+}
+
+export function cancelCropEyedropper() {
+  S.crop.eyedropping = false;
+  const btn = document.getElementById('eyedropperBtn');
+  if (btn) btn.classList.remove('active');
+  if (S.crop.w > 0) oc.style.cursor = 'default';
+  else oc.style.cursor = 'crosshair';
 }
 
 function constrainCropAspect() {
