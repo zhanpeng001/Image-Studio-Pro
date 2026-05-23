@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { S } from '../state.js';
-import { $, oc, octx } from '../dom.js';
-import { fitImage, renderAll } from '../canvas.js';
+import { $, oc, octx, ctx } from '../dom.js';
+import { fitImage, renderAll, renderCropExpand, restoreCropCanvas } from '../canvas.js';
 import { pushHistory } from '../history.js';
 import { drawCropOverlay } from '../overlay.js';
 import { toast } from '../ui.js';
@@ -31,6 +31,21 @@ export function renderCropPanel(p) {
       <input type="number" id="customRatioW" value="${crW}" min="1" max="100" style="flex:1;">
       <span style="color:var(--text2);font-size:12px;">:</span>
       <input type="number" id="customRatioH" value="${crH}" min="1" max="100" style="flex:1;">
+    </div>
+    <div class="divider"></div>
+    <div class="col">
+      <label>Expand Canvas</label>
+      <div class="expand-row">
+        <button class="expand-btn" id="expandMinus">-</button>
+        <span class="expand-val" id="expandVal">${S.crop.expand} px</span>
+        <button class="expand-btn" id="expandPlus">+</button>
+        <button class="eyedropper-btn" id="eyedropperBtn" title="Pick color from image">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 22l1-1h3l9-9"/><path d="M19 3l2 2L10 16H8v-2L19 3z"/></svg>
+        </button>
+        <input type="color" id="fillColorPicker" value="${S.crop.fillColor}" style="display:none;">
+        <div class="color-swatch" id="colorSwatch" style="background:${S.crop.fillColor};" title="Current fill color"></div>
+        <span class="expand-reset" id="expandReset">reset</span>
+      </div>
     </div>
     <div class="divider"></div>
     <div class="col">
@@ -151,6 +166,94 @@ export function renderCropPanel(p) {
   };
 
   drawCropOverlay();
+
+  // Expand controls
+  const expandMinus = $('expandMinus');
+  const expandPlus = $('expandPlus');
+  const expandVal = $('expandVal');
+  const fillColorPicker = $('fillColorPicker');
+  const colorSwatch = $('colorSwatch');
+  const expandReset = $('expandReset');
+  const eyedropperBtn = $('eyedropperBtn');
+
+  const updateExpand = (delta: number) => {
+    S.crop.expand = Math.max(0, S.crop.expand + delta);
+    expandVal.textContent = S.crop.expand + ' px';
+    if (S.crop.expand > 0) {
+      renderCropExpand();
+    } else {
+      restoreCropCanvas();
+      renderAll();
+    }
+    drawCropOverlay();
+  };
+
+  expandMinus.onclick = () => updateExpand(-10);
+  expandPlus.onclick = () => updateExpand(10);
+
+  const applyFillColor = (color: string) => {
+    S.crop.fillColor = color;
+    fillColorPicker.value = color;
+    colorSwatch.style.background = color;
+    if (S.crop.expand > 0) {
+      renderCropExpand();
+      drawCropOverlay();
+    }
+  };
+
+  colorSwatch.onclick = () => fillColorPicker.click();
+  fillColorPicker.oninput = () => applyFillColor(fillColorPicker.value);
+
+  const activateEyedropper = () => {
+    S.crop.eyedropping = true;
+    eyedropperBtn?.classList.add('active');
+    oc.style.cursor = 'crosshair';
+  };
+
+  const deactivateEyedropper = () => {
+    S.crop.eyedropping = false;
+    eyedropperBtn?.classList.remove('active');
+    oc.style.cursor = S.crop.w > 0 ? 'default' : 'crosshair';
+  };
+
+  eyedropperBtn.onclick = () => {
+    if (S.crop.eyedropping) {
+      deactivateEyedropper();
+    } else {
+      activateEyedropper();
+    }
+  };
+
+  // Intercept overlay mousedown for eyedropper before crop events
+  const origCropDown = oc.onmousedown;
+  oc.onmousedown = (e: MouseEvent) => {
+    if (S.crop.eyedropping) {
+      const rect = oc.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      const pad = S.crop.expand;
+      // Only sample within image area
+      if (mx >= pad && mx <= pad + S.viewW && my >= pad && my <= pad + S.viewH) {
+        const pixel = ctx.getImageData(Math.round(mx), Math.round(my), 1, 1).data;
+        const hex = '#' + [pixel[0], pixel[1], pixel[2]].map(c => c.toString(16).padStart(2, '0')).join('');
+        applyFillColor(hex);
+      }
+      deactivateEyedropper();
+      return;
+    }
+    if (origCropDown) origCropDown(e);
+  };
+
+  expandReset.onclick = () => {
+    S.crop.expand = 0;
+    S.crop.fillColor = '#FFFFFF';
+    expandVal.textContent = '0 px';
+    fillColorPicker.value = '#FFFFFF';
+    colorSwatch.style.background = '#FFFFFF';
+    restoreCropCanvas();
+    renderAll();
+    drawCropOverlay();
+  };
 }
 
 function constrainCropAspect() {
