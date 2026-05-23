@@ -167,14 +167,14 @@ function switchTool(tool) {
 
   statusTool.textContent = toolStatusLabels[tool] || tool;
 
+  setupCanvasEvents();
+
   if (!S.img) {
     renderLockedToolPanel(tool);
   } else {
     const fn = toolPanels[tool];
     if (fn) fn(panel);
   }
-
-  setupCanvasEvents();
 }
 
 function setupCanvasEvents() {
@@ -307,7 +307,15 @@ function handleToolKeys(e) {
   if ((e.key === 'Escape' || e.key === 'Delete') && document.activeElement === document.body) {
     e.preventDefault();
     if (S.tool === 'crop') {
-      S.crop = { x:0, y:0, w:0, h:0, dragging:false, dragCorner:null, aspect:S.crop.aspect, moving:false, moveStartX:0, moveStartY:0, moveOrigX:0, moveOrigY:0 };
+      if (S.crop.eyedropping) {
+        S.crop.eyedropping = false;
+        const eyedropperBtn = document.getElementById('eyedropperBtn');
+        if (eyedropperBtn) eyedropperBtn.classList.remove('active');
+        if (S.crop.w > 0) oc.style.cursor = 'default';
+        else oc.style.cursor = 'crosshair';
+        return;
+      }
+      S.crop = { x:0, y:0, w:0, h:0, dragging:false, dragCorner:null, aspect:S.crop.aspect, moving:false, moveStartX:0, moveStartY:0, moveOrigX:0, moveOrigY:0, expand: S.crop.expand, fillColor: S.crop.fillColor, eyedropping: false };
       drawCropOverlay();
     } else if (S.tool === 'rotate' && S.rotate.previewActive) {
       resetRotatePreview();
