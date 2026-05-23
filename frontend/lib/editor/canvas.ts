@@ -57,3 +57,29 @@ export function renderRotatePreview(angleDeg) {
   S.origData = ctx.getImageData(0, 0, mc.width, mc.height);
   S.workData = new ImageData(new Uint8ClampedArray(S.origData.data), mc.width, mc.height);
 }
+
+export function renderCropExpand() {
+  if (!S.img || S.crop.expand <= 0) return;
+  const pad = S.crop.expand;
+  const cw = S.viewW + 2 * pad;
+  const ch = S.viewH + 2 * pad;
+
+  mc.width = cw; mc.height = ch;
+  oc.width = cw; oc.height = ch;
+  mc.style.width = cw + 'px'; mc.style.height = ch + 'px';
+  oc.style.width = cw + 'px'; oc.style.height = ch + 'px';
+
+  ctx.fillStyle = S.crop.fillColor;
+  ctx.fillRect(0, 0, cw, ch);
+  ctx.drawImage(S.img, pad, pad, S.viewW, S.viewH);
+  S.origData = ctx.getImageData(0, 0, cw, ch);
+  S.workData = new ImageData(new Uint8ClampedArray(S.origData.data), cw, ch);
+}
+
+export function restoreCropCanvas() {
+  if (!S.img) return;
+  mc.width = S.viewW; mc.height = S.viewH;
+  oc.width = S.viewW; oc.height = S.viewH;
+  mc.style.width = S.viewW + 'px'; mc.style.height = S.viewH + 'px';
+  oc.style.width = S.viewW + 'px'; oc.style.height = S.viewH + 'px';
+}
