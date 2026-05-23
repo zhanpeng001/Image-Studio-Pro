@@ -157,7 +157,7 @@ export function renderCropPanel(p) {
   const resizeApplyBtn = $('cropResizeApply');
   if (resizeApplyBtn) resizeApplyBtn.onclick = applyResizeOnly;
   if (resetBtn) resetBtn.onclick = () => {
-    S.crop = { x:0, y:0, w:0, h:0, dragging:false, dragCorner:null, aspect:S.crop.aspect, moving:false, moveStartX:0, moveStartY:0, moveOrigX:0, moveOrigY:0 };
+    S.crop = { x:0, y:0, w:0, h:0, dragging:false, dragCorner:null, aspect:S.crop.aspect, moving:false, moveStartX:0, moveStartY:0, moveOrigX:0, moveOrigY:0, expand: S.crop.expand, fillColor: S.crop.fillColor, eyedropping: false };
     resW.value = S.img.width;
     resH.value = S.img.height;
     S.resize.w = S.img.width;

@@ -121,7 +121,11 @@ function switchTool(tool) {
   if (S.tool === 'crop') {
     S.crop.dragging = false;
     S.crop.moving = false;
+    S.crop.eyedropping = false;
     cleanupCropEvents();
+    if (S.crop.expand > 0) {
+      restoreCropCanvas();
+    }
   }
   if (S.tool === 'grid') {
     S.grid.drag = null;
