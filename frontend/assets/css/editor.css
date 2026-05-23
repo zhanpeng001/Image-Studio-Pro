@@ -1074,3 +1074,93 @@ body {
   outline: none;
   border-color: var(--accent);
 }
+
+/* Crop expand controls */
+.expand-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.expand-row .expand-val {
+  font-size: 12px;
+  color: var(--text);
+  font-weight: 500;
+  min-width: 48px;
+  text-align: center;
+}
+
+.expand-btn {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  transition: all var(--transition);
+  font-family: inherit;
+  line-height: 1;
+}
+
+.expand-btn:hover {
+  border-color: var(--border-strong);
+  background: var(--surface3);
+}
+
+.eyedropper-btn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text2);
+  cursor: pointer;
+  font-size: 14px;
+  transition: all var(--transition);
+}
+
+.eyedropper-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.eyedropper-btn.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.color-swatch {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color var(--transition);
+}
+
+.color-swatch:hover {
+  border-color: var(--border-strong);
+}
+
+.expand-reset {
+  font-size: 11px;
+  color: var(--text2);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  margin-left: auto;
+}
+
+.expand-reset:hover {
+  color: var(--text);
+}
