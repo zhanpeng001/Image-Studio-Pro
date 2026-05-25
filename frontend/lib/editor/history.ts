@@ -1,11 +1,11 @@
-// @ts-nocheck
 import { S } from './state.js';
 import { fitImage, renderAll } from './canvas.js';
 import { drawCropOverlay, drawGridOverlay } from './overlay.js';
 import { updateStatus, toast } from './ui.js';
 import { canvasFromImage } from './utils.js';
 
-function snapshot(label) {
+function snapshot(label: string) {
+  if (!S.img) throw new Error('No image loaded');
   const tmp = canvasFromImage(S.img);
   return {
     dataURL: tmp.toDataURL('image/png'),
@@ -15,7 +15,7 @@ function snapshot(label) {
   };
 }
 
-export function pushHistory(label) {
+export function pushHistory(label: string) {
   S.history = S.history.slice(0, S.histIdx + 1);
   S.redoHistory = [];
   S.history.push(snapshot(label));
@@ -24,7 +24,7 @@ export function pushHistory(label) {
   updateUndoRedoButtons();
 }
 
-function restoreFromHistory(idx) {
+function restoreFromHistory(idx: number) {
   const entry = S.history[idx];
   const img = new Image();
   img.onload = () => {
@@ -51,6 +51,7 @@ export function redo() {
   if (S.redoHistory.length === 0) return;
   S.histIdx++;
   const entry = S.redoHistory.pop();
+  if (!entry) return;
   const label = entry.label;
   const img = new Image();
   img.onload = () => {

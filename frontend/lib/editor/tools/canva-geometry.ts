@@ -1,14 +1,14 @@
-// @ts-nocheck
+import type { CanvaLayer } from '../state.js';
 
-function imageWidth(img) {
+function imageWidth(img: HTMLImageElement | null) {
   return img?.width || img?.naturalWidth || 1;
 }
 
-function imageHeight(img) {
+function imageHeight(img: HTMLImageElement | null) {
   return img?.height || img?.naturalHeight || 1;
 }
 
-function layerCorners(layer) {
+function layerCorners(layer: CanvaLayer) {
   const cx = layer.x + layer.w / 2;
   const cy = layer.y + layer.h / 2;
   const hw = layer.w / 2;
@@ -27,7 +27,7 @@ function layerCorners(layer) {
   }));
 }
 
-export function computeCanvaMergeGeometry(layers) {
+export function computeCanvaMergeGeometry(layers: CanvaLayer[]) {
   const base = layers[0];
   const baseW = imageWidth(base.img) || base.w || 1;
   const baseH = imageHeight(base.img) || base.h || 1;

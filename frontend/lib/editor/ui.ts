@@ -1,10 +1,9 @@
-// @ts-nocheck
 import { S } from './state.js';
 import { $, imageInfo, statusDim, statusZoom, saveModal } from './dom.js';
 import { triggerDownload } from './utils.js';
 
 // ==================== TOAST ====================
-export function toast(msg) {
+export function toast(msg: string) {
   const old = document.querySelector('.toast');
   if (old) old.remove();
   const d = document.createElement('div');
@@ -36,7 +35,7 @@ const SHORTCUTS = [
   ['?', 'Toggle this panel'],
 ];
 
-export function setupShortcutsPanel(signal) {
+export function setupShortcutsPanel(signal: AbortSignal) {
   document.getElementById('shortcutsOverlay')?.remove();
   const overlay = document.createElement('div');
   overlay.id = 'shortcutsOverlay';
@@ -65,9 +64,9 @@ export function setupShortcutsPanel(signal) {
 }
 
 // ==================== KEYBOARD ====================
-let _undoFn, _redoFn, _saveFn, _openFn;
+let _undoFn: (() => void) | null, _redoFn: (() => void) | null, _saveFn: (() => void) | null, _openFn: (() => void) | null;
 
-export function setupKeys(undoFn, redoFn, saveFn, openFn, signal) {
+export function setupKeys(undoFn: () => void, redoFn: () => void, saveFn: () => void, openFn: () => void, signal: AbortSignal) {
   _undoFn = undoFn; _redoFn = redoFn; _saveFn = saveFn; _openFn = openFn;
 
   document.addEventListener('keydown', e => {
@@ -89,7 +88,7 @@ export function setupKeys(undoFn, redoFn, saveFn, openFn, signal) {
 }
 
 // ==================== SAVE MODAL ====================
-export function setupSaveModal(signal) {
+export function setupSaveModal(signal: AbortSignal) {
   const saveCancel = $('saveCancel');
   const saveConfirm = $('saveConfirm');
   const saveFormat = $('saveFormat');
@@ -99,13 +98,14 @@ export function setupSaveModal(signal) {
   saveModal.addEventListener('click', e => { if (e.target === saveModal) saveModal.style.display = 'none'; }, { signal });
 
   saveConfirm.addEventListener('click', () => {
+    if (!S.img) return;
     const fmt = saveFormat.value;
     const fname = saveFilename.value || 'image';
 
     const tmp = document.createElement('canvas');
     tmp.width = S.img.width;
     tmp.height = S.img.height;
-    tmp.getContext('2d').drawImage(S.img, 0, 0);
+    tmp.getContext('2d')!.drawImage(S.img, 0, 0);
 
     let mime;
     if (fmt === 'jpeg') mime = 'image/jpeg';
@@ -116,7 +116,7 @@ export function setupSaveModal(signal) {
     const dlName = fname.replace(/\.[^.]+$/, '') + ext;
 
     tmp.toBlob(blob => {
-      triggerDownload(blob, dlName);
+      if (blob) triggerDownload(blob, dlName);
     }, mime, fmt === 'png' ? undefined : 0.92);
 
     saveModal.style.display = 'none';

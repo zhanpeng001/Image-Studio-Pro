@@ -75,6 +75,31 @@ cd frontend
 npm install
 ```
 
+### Start the Local Server
+
+Use this path when you want the app running locally without relying on the Nuxt dev server:
+
+```bash
+cd frontend
+npm run generate
+cd ../backend
+go run ./cmd/server
+```
+
+Open:
+
+```text
+http://127.0.0.1:8080
+```
+
+If Go cannot initialize its default build cache on Windows, run the backend with a repo-local cache:
+
+```powershell
+cd backend
+$env:GOCACHE = "$PWD\..\.cache\go-build"
+go run ./cmd/server
+```
+
 ### Run the Frontend Dev Server
 
 ```bash

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { S } from '../state.js';
 import { $ } from '../dom.js';
 import { toast } from '../ui.js';
@@ -11,7 +10,7 @@ const QUALITY_PRESETS = [
   { label: 'Max', pct: 100 },
 ];
 
-export function renderCompressorPanel(p) {
+export function renderCompressorPanel(p: HTMLElement) {
   p.innerHTML = `
     <h3>Compress Image</h3>
     <div class="col"><label>Format</label>
@@ -48,7 +47,7 @@ export function renderCompressorPanel(p) {
 
   const slider = $('compQuality');
   const qualVal = $('compQualVal');
-  let lastBlob = null;
+  let lastBlob: Blob | null = null;
 
   slider.addEventListener('input', () => {
     qualVal.textContent = slider.value + '%';
@@ -56,9 +55,9 @@ export function renderCompressorPanel(p) {
 
   const presetsEl = $('compPresets');
   presetsEl.addEventListener('click', e => {
-    const pr = e.target.closest('.preset');
+    const pr = (e.target as HTMLElement).closest('.preset') as HTMLElement | null;
     if (!pr) return;
-    slider.value = +pr.dataset.pct;
+    slider.value = String(+pr.dataset.pct!);
     qualVal.textContent = slider.value + '%';
   });
 
@@ -67,6 +66,7 @@ export function renderCompressorPanel(p) {
     const qual = +slider.value / 100;
     const mime = fmt === 'jpeg' ? 'image/jpeg' : 'image/webp';
 
+    if (!S.img) return;
     const tmp = canvasFromImage(S.img);
 
     const dataUrl = tmp.toDataURL('image/png');
@@ -81,6 +81,7 @@ export function renderCompressorPanel(p) {
     }
 
     tmp.toBlob(blob => {
+      if (!blob) return;
       lastBlob = blob;
       $('compOrigSize').textContent = formatSize(origBytes);
       $('compNewSize').textContent = formatSize(blob.size);
@@ -100,7 +101,7 @@ export function renderCompressorPanel(p) {
   });
 }
 
-function formatSize(bytes) {
+function formatSize(bytes: number) {
   if (bytes >= 1_000_000) return (bytes / 1_000_000).toFixed(1) + ' MB';
   if (bytes >= 1_000) return (bytes / 1_000).toFixed(1) + ' KB';
   return bytes + ' B';

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { S } from '../state.js';
 import { $, mc, ctx } from '../dom.js';
 import { fitImage, renderAll } from '../canvas.js';
@@ -9,7 +8,7 @@ import { canvasFromImage, loadImageFromCanvas } from '../utils.js';
 
 const SCALE_PRESETS = [25, 50, 75, 150, 200, 400];
 
-export function renderScalePanel(p) {
+export function renderScalePanel(p: HTMLElement) {
   S.resize.pct = 100;
 
   p.innerHTML = `
@@ -35,6 +34,7 @@ export function renderScalePanel(p) {
   const doLive = () => $('scaleLive').checked;
 
   slider.addEventListener('input', () => {
+    if (!S.img) return;
     const p = +slider.value;
     pctVal.textContent = p + '%';
     if (doLive()) {
@@ -45,6 +45,7 @@ export function renderScalePanel(p) {
   });
 
   $('scaleLive').addEventListener('change', () => {
+    if (!S.img) return;
     if (doLive()) {
       const p = +slider.value;
       const w = Math.round(S.img.width * p / 100);
@@ -57,10 +58,11 @@ export function renderScalePanel(p) {
 
   const presetsEl = $('scalePresets');
   presetsEl.addEventListener('click', e => {
-    const pr = e.target.closest('.preset');
+    if (!S.img) return;
+    const pr = (e.target as HTMLElement).closest('.preset');
     if (!pr) return;
-    const p = +pr.dataset.pct;
-    slider.value = p;
+    const p = +(pr as HTMLElement).dataset.pct!;
+    slider.value = String(p);
     pctVal.textContent = p + '%';
     const w = Math.round(S.img.width * p / 100);
     const h = Math.round(S.img.height * p / 100);
@@ -68,20 +70,23 @@ export function renderScalePanel(p) {
   });
 
   $('scaleApply').addEventListener('click', () => {
+    if (!S.img) return;
     const p = +slider.value;
     applyScale(p);
   });
 }
 
-function renderLivePreview(w, h) {
+function renderLivePreview(w: number, h: number) {
+  if (!S.img) return;
   const tmp = document.createElement('canvas');
   tmp.width = w; tmp.height = h;
-  tmp.getContext('2d').drawImage(S.img, 0, 0, w, h);
+  tmp.getContext('2d')!.drawImage(S.img, 0, 0, w, h);
   ctx.clearRect(0, 0, mc.width, mc.height);
   ctx.drawImage(tmp, 0, 0, mc.width, mc.height);
 }
 
-async function applyScale(pct) {
+async function applyScale(pct: number) {
+  if (!S.img) return;
   pushHistory('Scale ' + pct + '%');
   const w = Math.round(S.img.width * pct / 100);
   const h = Math.round(S.img.height * pct / 100);
@@ -91,7 +96,7 @@ async function applyScale(pct) {
   const result = pct < 100 ? smartResize(src, w, h) : (() => {
     const c = document.createElement('canvas');
     c.width = w; c.height = h;
-    c.getContext('2d').drawImage(S.img, 0, 0, w, h);
+    c.getContext('2d')!.drawImage(S.img!, 0, 0, w, h);
     return c;
   })();
 

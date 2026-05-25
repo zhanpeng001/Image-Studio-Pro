@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 // Lanczos-3 resampling kernel
 function lanczosKernel(x: number): number {

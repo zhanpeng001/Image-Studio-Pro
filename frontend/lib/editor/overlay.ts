@@ -1,10 +1,24 @@
-// @ts-nocheck
 import { S } from './state.js';
 import { oc, octx } from './dom.js';
 
 export function clearOverlay() {
   octx.clearRect(0, 0, oc.width, oc.height);
   oc.style.cursor = 'default';
+}
+
+export interface Handle {
+  x: number;
+  y: number;
+}
+
+export function drawHandles(context: CanvasRenderingContext2D, handles: Handle[], size: number = 8): void {
+  context.fillStyle = '#fff';
+  context.strokeStyle = '#58a6ff';
+  context.lineWidth = 1.5;
+  for (const handle of handles) {
+    context.fillRect(handle.x - size / 2, handle.y - size / 2, size, size);
+    context.strokeRect(handle.x - size / 2, handle.y - size / 2, size, size);
+  }
 }
 
 // ==================== CROP OVERLAY ====================
@@ -25,11 +39,12 @@ export function drawCropOverlay() {
   octx.setLineDash([]);
 
   // Corner handles
-  octx.fillStyle = '#fff'; octx.strokeStyle = '#58a6ff'; octx.lineWidth = 1.5;
-  [[c.x, c.y], [c.x + c.w, c.y], [c.x, c.y + c.h], [c.x + c.w, c.y + c.h]].forEach(([hx, hy]) => {
-    octx.fillRect(hx - 4, hy - 4, 8, 8);
-    octx.strokeRect(hx - 4, hy - 4, 8, 8);
-  });
+  drawHandles(octx, [
+    { x: c.x, y: c.y },
+    { x: c.x + c.w, y: c.y },
+    { x: c.x, y: c.y + c.h },
+    { x: c.x + c.w, y: c.y + c.h }
+  ]);
 
   // Edge midpoints (for edge resize)
   octx.fillStyle = 'rgba(255,255,255,0.6)'; octx.strokeStyle = 'rgba(88,166,255,0.6)'; octx.lineWidth = 1;

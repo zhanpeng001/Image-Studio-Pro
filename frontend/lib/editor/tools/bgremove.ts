@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { S } from '../state.js';
 import { $, optional$ } from '../dom.js';
 import { fitImage, renderAll } from '../canvas.js';
@@ -13,7 +12,7 @@ const MODEL_LABELS = {
   isnet: 'Quality (slowest)',
 };
 
-export function renderBGPanel(p) {
+export function renderBGPanel(p: HTMLElement) {
   const bg = S.bg;
   let html = '<h3>Background Removal</h3>';
 
@@ -53,13 +52,13 @@ export function renderBGPanel(p) {
   const runBtn = optional$('bgRun');
   if (runBtn) runBtn.onclick = () => { runAIBG(); };
   const modelSel = optional$('bgModel');
-  if (modelSel) modelSel.onchange = () => { bg.model = modelSel.value; };
+  if (modelSel) modelSel.onchange = () => { bg.model = modelSel.value as typeof bg.model; };
   const enhChk = optional$('bgEnhance');
   if (enhChk) enhChk.onchange = () => { bg.enhance = enhChk.checked; renderBGPanel(p); };
   const refChk = optional$('bgRefine');
   if (refChk) refChk.onchange = () => { bg.refine = refChk.checked; renderBGPanel(p); };
   const tolEl = optional$('bgTol');
-  if (tolEl) tolEl.oninput = () => { bg.tol = +tolEl.value; $('bgTolV').textContent = bg.tol; };
+  if (tolEl) tolEl.oninput = () => { bg.tol = +tolEl.value; $('bgTolV').textContent = String(bg.tol); };
   const feEl = optional$('bgFeath');
   if (feEl) feEl.oninput = () => { bg.feather = +feEl.value; $('bgFeathV').textContent = bg.feather + 'px'; };
   const refApply = optional$('bgRefineApply');
@@ -68,17 +67,17 @@ export function renderBGPanel(p) {
 
 async function loadAI() {
   S.bg.aiLoading = true;
-  document.querySelector('.side-btn[data-tool="bgremove"]').click();
+  (document.querySelector('.side-btn[data-tool="bgremove"]') as HTMLElement)?.click();
   toast('Loading AI model...');
 
   try {
     S.bg.aiLoaded = true;
     toast('AI model ready');
   } catch (err) {
-    toast('Failed: ' + (err.message || 'Check connection'));
+    toast('Failed: ' + ((err as Error).message || 'Check connection'));
   }
   S.bg.aiLoading = false;
-  document.querySelector('.side-btn[data-tool="bgremove"]').click();
+  (document.querySelector('.side-btn[data-tool="bgremove"]') as HTMLElement)?.click();
 }
 
 // Apply unsharp mask to enhance edges before AI processing.
@@ -167,6 +166,7 @@ function boxBlur(src: ImageData, radius: number, w: number, h: number): ImageDat
 
 async function runAIBG() {
   if (!S.bg.aiLoaded) { toast('Load AI model first'); return; }
+  if (!S.img) return;
   pushHistory('BG Remove');
   toast('Processing with AI...');
 
@@ -192,17 +192,18 @@ async function runAIBG() {
       S.img = nimg; fitImage(); renderAll();
       URL.revokeObjectURL(url);
       toast('Background removed');
-      document.querySelector('.side-btn[data-tool="bgremove"]').click();
+      (document.querySelector('.side-btn[data-tool="bgremove"]') as HTMLElement)?.click();
     };
     nimg.onerror = () => { toast('Failed to decode result'); URL.revokeObjectURL(url); };
     nimg.src = url;
   } catch (err) {
-    toast('Error: ' + (err.message || 'unknown'));
-    document.querySelector('.side-btn[data-tool="bgremove"]').click();
+    toast('Error: ' + ((err as Error).message || 'unknown'));
+    (document.querySelector('.side-btn[data-tool="bgremove"]') as HTMLElement)?.click();
   }
 }
 
 async function refineEdges() {
+  if (!S.img) return;
   const tol = S.bg.tol;
   const feather = S.bg.feather;
   const iw = S.img.width, ih = S.img.height;
@@ -250,5 +251,5 @@ async function refineEdges() {
   S.img = await loadImageFromCanvas(tmp);
   fitImage(); renderAll();
   toast('Edges refined');
-  document.querySelector('.side-btn[data-tool="bgremove"]').click();
+  (document.querySelector('.side-btn[data-tool="bgremove"]') as HTMLElement)?.click();
 }

@@ -1,7 +1,6 @@
-// @ts-nocheck
 import { S, resetRotatePreview } from '../state.js';
-import { $ } from '../dom.js';
-import { fitImage, renderAll, renderRotatePreview } from '../canvas.js';
+import { $, mc, oc, ctx } from '../dom.js';
+import { fitImage, renderAll } from '../canvas.js';
 import { pushHistory } from '../history.js';
 import { toast } from '../ui.js';
 import { triggerDownload } from '../utils.js';
@@ -10,14 +9,39 @@ import JSZip from 'jszip';
 const COMMON_ANGLES = [-180, -90, -45, 0, 45, 90, 180];
 const SNAP_THRESHOLD = 3;
 
-function snapAngle(deg) {
+export function renderRotatePreview(angleDeg: number) {
+  if (!S.img) return;
+  const rad = angleDeg * Math.PI / 180;
+  const iw = S.viewW || mc.width;
+  const ih = S.viewH || mc.height;
+  const c = Math.abs(Math.cos(rad));
+  const s = Math.abs(Math.sin(rad));
+  const bw = Math.max(1, Math.ceil(iw * c + ih * s));
+  const bh = Math.max(1, Math.ceil(iw * s + ih * c));
+
+  mc.width = bw; mc.height = bh;
+  oc.width = bw; oc.height = bh;
+  mc.style.width = bw + 'px'; mc.style.height = bh + 'px';
+  oc.style.width = bw + 'px'; oc.style.height = bh + 'px';
+
+  ctx.clearRect(0, 0, mc.width, mc.height);
+  ctx.save();
+  ctx.translate(mc.width / 2, mc.height / 2);
+  ctx.rotate(rad);
+  ctx.drawImage(S.img, -iw / 2, -ih / 2, iw, ih);
+  ctx.restore();
+  S.origData = ctx.getImageData(0, 0, mc.width, mc.height);
+  S.workData = new ImageData(new Uint8ClampedArray(S.origData.data), mc.width, mc.height);
+}
+
+function snapAngle(deg: number) {
   for (const a of COMMON_ANGLES) {
     if (Math.abs(deg - a) <= SNAP_THRESHOLD) return a;
   }
   return deg;
 }
 
-export function renderRotatePanel(p) {
+export function renderRotatePanel(p: HTMLElement) {
   const currentAngle = S.rotate.previewActive ? S.rotate.previewAngle : 0;
   const snapshotCount = S.rotate.snapshots.length;
   p.innerHTML = `
@@ -77,9 +101,9 @@ export function renderRotatePanel(p) {
   const presetsEl = $('rotPresets');
   if (presetsEl) {
     presetsEl.addEventListener('click', e => {
-      const pr = e.target.closest('.preset');
+      const pr = (e.target as HTMLElement).closest('.preset') as HTMLElement | null;
       if (!pr) return;
-      const deg = +pr.dataset.deg;
+      const deg = +pr.dataset.deg!;
       setAngle(deg);
     });
   }
@@ -94,15 +118,15 @@ export function renderRotatePanel(p) {
   $('angSlider').oninput = () => {
     const raw = +$('angSlider').value;
     const snapped = snapAngle(raw);
-    $('angInput').value = snapped;
+    $('angInput').value = String(snapped);
     startLivePreview(snapped);
   };
   $('angSlider').onchange = () => {
     // On release, snap to common angle
     const raw = +$('angSlider').value;
     const snapped = snapAngle(raw);
-    $('angSlider').value = snapped;
-    $('angInput').value = snapped;
+    $('angSlider').value = String(snapped);
+    $('angInput').value = String(snapped);
     startLivePreview(snapped);
   };
 
@@ -111,15 +135,15 @@ export function renderRotatePanel(p) {
     const v = parseFloat($('angInput').value);
     if (isNaN(v)) return;
     const clamped = Math.max(-180, Math.min(180, v));
-    $('angSlider').value = clamped;
+    $('angSlider').value = String(clamped);
     startLivePreview(clamped);
   };
   $('angInput').onchange = () => {
     const v = parseFloat($('angInput').value);
-    if (isNaN(v)) { $('angInput').value = 0; $('angSlider').value = 0; return; }
+    if (isNaN(v)) { $('angInput').value = '0'; $('angSlider').value = '0'; return; }
     const clamped = Math.max(-180, Math.min(180, v));
-    $('angInput').value = clamped;
-    $('angSlider').value = clamped;
+    $('angInput').value = String(clamped);
+    $('angSlider').value = String(clamped);
     startLivePreview(clamped);
   };
 
@@ -133,9 +157,9 @@ export function renderRotatePanel(p) {
   const list = $('rotSnapshotList');
   if (list) {
     list.addEventListener('click', e => {
-      const btn = e.target.closest('[data-delete-snapshot]');
+      const btn = (e.target as HTMLElement).closest('[data-delete-snapshot]') as HTMLElement | null;
       if (!btn) return;
-      deleteRotationSnapshot(+btn.dataset.deleteSnapshot, p);
+      deleteRotationSnapshot(+(btn.dataset.deleteSnapshot!), p);
     });
   }
 }
@@ -156,20 +180,20 @@ function renderSnapshotList() {
   `).join('');
 }
 
-function setAngle(deg) {
-  $('angSlider').value = deg;
-  $('angInput').value = deg;
+function setAngle(deg: number) {
+  $('angSlider').value = String(deg);
+  $('angInput').value = String(deg);
   startLivePreview(deg);
 }
 
-function adjustAngle(delta) {
+function adjustAngle(delta: number) {
   let current = S.rotate.previewActive ? S.rotate.previewAngle : 0;
   current = Math.round((current + delta) * 10) / 10; // avoid floating point issues
   current = Math.max(-180, Math.min(180, current));
   setAngle(current);
 }
 
-function startLivePreview(deg) {
+function startLivePreview(deg: number) {
   S.rotate.previewActive = true;
   S.rotate.previewAngle = deg;
   renderRotatePreview(deg);
@@ -183,7 +207,7 @@ function getCurrentAngle() {
   return Number.isFinite(deg) ? Math.max(-180, Math.min(180, deg)) : 0;
 }
 
-function formatAngle(deg) {
+function formatAngle(deg: number) {
   return Number.isInteger(deg) ? String(deg) : String(Math.round(deg * 10) / 10);
 }
 
@@ -193,7 +217,8 @@ export function commitRotation() {
   applyRotation(deg);
 }
 
-function renderRotatedCanvas(deg) {
+function renderRotatedCanvas(deg: number) {
+  if (!S.img) throw new Error('No image loaded');
   const rad = deg * Math.PI / 180;
   const iw = S.img.width, ih = S.img.height;
   const c = Math.abs(Math.cos(rad)), s = Math.abs(Math.sin(rad));
@@ -203,13 +228,13 @@ function renderRotatedCanvas(deg) {
   else { nw = Math.round(iw * c + ih * s); nh = Math.round(iw * s + ih * c); }
 
   const tmp = document.createElement('canvas'); tmp.width = nw; tmp.height = nh;
-  const tx = tmp.getContext('2d');
+  const tx = tmp.getContext('2d')!;
   tx.translate(nw / 2, nh / 2); tx.rotate(rad);
   tx.drawImage(S.img, -iw / 2, -ih / 2);
   return tmp;
 }
 
-function applyRotation(deg) {
+function applyRotation(deg: number) {
   if (!S.img) return;
   pushHistory('Rotate ' + deg + '\u00B0');
   const tmp = renderRotatedCanvas(deg);
@@ -219,7 +244,7 @@ function applyRotation(deg) {
   nimg.src = tmp.toDataURL('image/png');
 }
 
-function saveRotationSnapshot(p) {
+function saveRotationSnapshot(p: HTMLElement) {
   if (!S.img) return;
   const deg = getCurrentAngle();
   const tmp = renderRotatedCanvas(deg);
@@ -235,7 +260,7 @@ function saveRotationSnapshot(p) {
   toast('Snapshot saved: ' + formatAngle(deg) + '\u00B0');
 }
 
-function deleteRotationSnapshot(id, p) {
+function deleteRotationSnapshot(id: number, p: HTMLElement) {
   const before = S.rotate.snapshots.length;
   S.rotate.snapshots = S.rotate.snapshots.filter(s => s.id !== id);
   if (S.rotate.snapshots.length !== before) {
@@ -244,7 +269,7 @@ function deleteRotationSnapshot(id, p) {
   }
 }
 
-function clearRotationSnapshots(p) {
+function clearRotationSnapshots(p: HTMLElement) {
   if (S.rotate.snapshots.length === 0) return;
   S.rotate.snapshots = [];
   renderRotatePanel(p);
@@ -284,7 +309,7 @@ function flipH() {
   pushHistory('Flip Horizontal');
   const tmp = document.createElement('canvas');
   tmp.width = S.img.width; tmp.height = S.img.height;
-  const tx = tmp.getContext('2d');
+  const tx = tmp.getContext('2d')!;
   tx.translate(S.img.width, 0); tx.scale(-1, 1);
   tx.drawImage(S.img, 0, 0);
   const nimg = new Image();
@@ -298,7 +323,7 @@ function flipV() {
   pushHistory('Flip Vertical');
   const tmp = document.createElement('canvas');
   tmp.width = S.img.width; tmp.height = S.img.height;
-  const tx = tmp.getContext('2d');
+  const tx = tmp.getContext('2d')!;
   tx.translate(0, S.img.height); tx.scale(1, -1);
   tx.drawImage(S.img, 0, 0);
   const nimg = new Image();

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { S } from '../state.js';
 import { $, oc } from '../dom.js';
 import { drawGridOverlay } from '../overlay.js';
@@ -6,7 +5,7 @@ import { toast } from '../ui.js';
 import { triggerDownload } from '../utils.js';
 import JSZip from 'jszip';
 
-export function renderGridPanel(p) {
+export function renderGridPanel(p: HTMLElement) {
   const g = S.grid;
   if (!g.hCh || g.hLines.length === 0) g.hLines = even(g.rows);
   if (!g.vCh || g.vLines.length === 0) g.vLines = even(g.cols);
@@ -24,13 +23,13 @@ export function renderGridPanel(p) {
   `;
 
   $('gRows').oninput = () => {
-    g.rows = +$('gRows').value; $('gRowsVal').textContent = g.rows;
+    g.rows = +$('gRows').value; $('gRowsVal').textContent = String(g.rows);
     g.hLines = even(g.rows); g.hCh = false;
     $('gridCount').textContent = g.rows + 'x' + g.cols + ' = ' + (g.rows * g.cols) + ' cells';
     drawGridOverlay();
   };
   $('gCols').oninput = () => {
-    g.cols = +$('gCols').value; $('gColsVal').textContent = g.cols;
+    g.cols = +$('gCols').value; $('gColsVal').textContent = String(g.cols);
     g.vLines = even(g.cols); g.vCh = false;
     $('gridCount').textContent = g.rows + 'x' + g.cols + ' = ' + (g.rows * g.cols) + ' cells';
     drawGridOverlay();
@@ -40,7 +39,7 @@ export function renderGridPanel(p) {
   drawGridOverlay();
 }
 
-function even(n) { const a = []; for (let i = 1; i < n; i++) a.push(i / n); return a; }
+function even(n: number) { const a: number[] = []; for (let i = 1; i < n; i++) a.push(i / n); return a; }
 
 export function setupGridEvents() {
   oc.onmousedown = gridDown;
@@ -49,7 +48,7 @@ export function setupGridEvents() {
   oc.onmouseleave = gridUp;
 }
 
-function gridDown(e) {
+function gridDown(e: MouseEvent) {
   const g = S.grid;
   const rect = oc.getBoundingClientRect();
   const mx = (e.clientX - rect.left) / oc.width;
@@ -64,7 +63,7 @@ function gridDown(e) {
   }
 }
 
-function gridMove(e) {
+function gridMove(e: MouseEvent) {
   const g = S.grid;
   const rect = oc.getBoundingClientRect();
   const mx = (e.clientX - rect.left) / oc.width;
@@ -98,6 +97,7 @@ function gridUp() { S.grid.drag = null; if (S.tool === 'grid') oc.style.cursor =
 async function downloadGridZip() {
   const g = S.grid;
 
+  if (!S.img) return;
   const img = S.img, iw = img.width, ih = img.height;
   const he = [0, ...g.hLines, 1];
   const ve = [0, ...g.vLines, 1];
@@ -116,7 +116,7 @@ async function downloadGridZip() {
 
       const cell = document.createElement('canvas');
       cell.width = sw; cell.height = sh;
-      cell.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+      cell.getContext('2d')!.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
       const b64 = cell.toDataURL('image/png').split(',')[1];
       zip.file('cell_r' + (r + 1) + '_c' + (c + 1) + '.png', b64, { base64: true });
     }

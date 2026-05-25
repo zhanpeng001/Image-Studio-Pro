@@ -1050,14 +1050,17 @@ body {
 #canvaTextOverlay {
   box-sizing: border-box;
   cursor: text;
+  outline-style: dashed;
+  outline-color: #58a6ff;
+  outline-width: 2px;
   border-radius: 3px;
   letter-spacing: 0;
 }
 
 #canvaTextOverlay:focus {
-  border-style: solid;
-  border-color: #58a6ff;
-  background: rgba(0, 0, 0, 0.3);
+  outline-style: solid;
+  outline-color: #58a6ff;
+  background: transparent;
 }
 
 /* Text panel controls */
@@ -1113,6 +1116,26 @@ body {
   background: var(--surface3);
 }
 
+.expand-input {
+  width: 52px;
+  height: 28px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  font-family: inherit;
+  -moz-appearance: textfield;
+}
+
+.expand-input::-webkit-inner-spin-button,
+.expand-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 .eyedropper-btn {
   width: 32px;
   height: 32px;
@@ -1152,6 +1175,29 @@ body {
   border-color: var(--border-strong);
 }
 
+.color-presets {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.color-preset-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: 2px solid var(--border);
+  cursor: pointer;
+  transition: all var(--transition);
+  flex-shrink: 0;
+}
+
+.color-preset-swatch:hover,
+.color-preset-swatch.active {
+  border-color: var(--accent);
+  transform: scale(1.15);
+}
+
 .expand-reset {
   font-size: 11px;
   color: var(--text2);
@@ -1163,4 +1209,36 @@ body {
 
 .expand-reset:hover {
   color: var(--text);
+}
+
+/* Canva icon picker */
+#canvaIconPicker {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  padding: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 4px;
+}
+
+.canva-icon-btn {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 4px;
+  transition: all var(--transition);
+  color: var(--text);
+}
+
+.canva-icon-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
 }

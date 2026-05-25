@@ -1,15 +1,42 @@
-// @ts-nocheck
 import { S } from '../state.js';
-import { $, oc, octx, ctx } from '../dom.js';
-import { fitImage, renderAll, renderCropExpand, restoreCropCanvas } from '../canvas.js';
+import { $, mc, oc, octx, ctx } from '../dom.js';
+import { fitImage, renderAll } from '../canvas.js';
 import { pushHistory } from '../history.js';
 import { drawCropOverlay } from '../overlay.js';
 import { toast } from '../ui.js';
 import { smartResize } from '../lanczos.js';
 import { canvasFromImage, loadImageFromCanvas, buildColorPresetsHTML, highlightPreset, wireColorPresets } from '../utils.js';
 
+export function renderCropExpand() {
+  if (!S.img || S.crop.expand <= 0) return;
+  const pad = S.crop.expand;
+  const cw = S.viewW + 2 * pad;
+  const ch = S.viewH + 2 * pad;
+
+  mc.width = cw; mc.height = ch;
+  oc.width = cw; oc.height = ch;
+  mc.style.width = cw + 'px'; mc.style.height = ch + 'px';
+  oc.style.width = cw + 'px'; oc.style.height = ch + 'px';
+
+  ctx.fillStyle = S.crop.fillColor;
+  ctx.fillRect(0, 0, cw, ch);
+  ctx.drawImage(S.img, pad, pad, S.viewW, S.viewH);
+  S.origData = ctx.getImageData(0, 0, cw, ch);
+  S.workData = new ImageData(new Uint8ClampedArray(S.origData.data), cw, ch);
+}
+
+export function restoreCropCanvas() {
+  if (!S.img) return;
+  mc.width = S.viewW; mc.height = S.viewH;
+  oc.width = S.viewW; oc.height = S.viewH;
+  mc.style.width = S.viewW + 'px'; mc.style.height = S.viewH + 'px';
+  oc.style.width = S.viewW + 'px'; oc.style.height = S.viewH + 'px';
+}
+
 // ==================== PANEL ====================
-export function renderCropPanel(p) {
+export function renderCropPanel(p: HTMLElement) {
+  const image = S.img;
+  if (!image) return;
   const customRatio = S.crop.aspect && !['1:1','4:3','16:9','3:2','2:3','9:16'].includes(S.crop.aspect) ? S.crop.aspect : null;
   const [crW, crH] = customRatio ? customRatio.split(':').map(Number) : [16, 9];
   const activePreset = S.crop.aspect || 'free';
@@ -54,9 +81,9 @@ export function renderCropPanel(p) {
       <label>Resize Output</label>
       <div style="display:flex;flex-direction:column;gap:6px;">
         <div class="row">
-          <input type="number" id="cropResW" value="${S.resize.w || S.img.width}" style="flex:1;">
+          <input type="number" id="cropResW" value="${S.resize.w || image.width}" style="flex:1;">
           <span style="color:var(--text2);font-size:12px;">x</span>
-          <input type="number" id="cropResH" value="${S.resize.h || S.img.height}" style="flex:1;">
+          <input type="number" id="cropResH" value="${S.resize.h || image.height}" style="flex:1;">
         </div>
         <label><input type="checkbox" id="cropResLock"${S.resize.lock ? ' checked' : ''}> Lock aspect ratio</label>
         <div class="presets" id="cropResPresets">
@@ -82,13 +109,13 @@ export function renderCropPanel(p) {
   const presetsEl = document.getElementById('cropPresets');
   if (presetsEl) {
     presetsEl.addEventListener('click', e => {
-      const pr = e.target.closest('.preset');
+      const pr = (e.target as HTMLElement).closest('.preset') as HTMLElement | null;
       if (!pr) return;
       presetsEl.querySelectorAll('.preset').forEach(x => x.classList.remove('active'));
       pr.classList.add('active');
       if (pr.dataset.ratio === 'custom') {
-        const wEl = document.getElementById('customRatioW');
-        const hEl = document.getElementById('customRatioH');
+        const wEl = document.getElementById('customRatioW') as HTMLInputElement | null;
+        const hEl = document.getElementById('customRatioH') as HTMLInputElement | null;
         const row = document.getElementById('customRatioRow');
         if (wEl) wEl.style.display = '';
         if (hEl) hEl.style.display = '';
@@ -99,15 +126,15 @@ export function renderCropPanel(p) {
       } else {
         const row = document.getElementById('customRatioRow');
         if (row) row.style.display = 'none';
-        S.crop.aspect = pr.dataset.ratio === 'free' ? null : pr.dataset.ratio;
+        S.crop.aspect = pr.dataset.ratio === 'free' ? null : (pr.dataset.ratio ?? null);
       }
       if (S.crop.w > 0) constrainCropAspect();
       drawCropOverlay();
     });
   }
 
-  const customW = document.getElementById('customRatioW');
-  const customH = document.getElementById('customRatioH');
+  const customW = document.getElementById('customRatioW') as HTMLInputElement | null;
+  const customH = document.getElementById('customRatioH') as HTMLInputElement | null;
   if (customW && customH) {
     const updateCustomRatio = () => {
       const cw = +customW.value || 16;
@@ -124,31 +151,31 @@ export function renderCropPanel(p) {
   const resW = $('cropResW');
   const resH = $('cropResH');
   const resLock = $('cropResLock');
-  const ratio = S.img.width / S.img.height;
+  const ratio = image.width / image.height;
 
-  S.resize.w = +resW.value || S.img.width;
-  S.resize.h = +resH.value || S.img.height;
+  S.resize.w = +resW.value || image.width;
+  S.resize.h = +resH.value || image.height;
   S.resize.lock = resLock.checked;
 
   const syncResW = () => {
     S.resize.w = +resW.value || 1;
-    if (resLock.checked) { S.resize.h = Math.round(S.resize.w / ratio); resH.value = S.resize.h; }
+    if (resLock.checked) { S.resize.h = Math.round(S.resize.w / ratio); resH.value = String(S.resize.h); }
   };
   const syncResH = () => {
     S.resize.h = +resH.value || 1;
-    if (resLock.checked) { S.resize.w = Math.round(S.resize.h * ratio); resW.value = S.resize.w; }
+    if (resLock.checked) { S.resize.w = Math.round(S.resize.h * ratio); resW.value = String(S.resize.w); }
   };
   resW.addEventListener('input', syncResW);
   resH.addEventListener('input', syncResH);
 
   const resPresetsEl = $('cropResPresets');
   resPresetsEl.addEventListener('click', e => {
-    const pr = e.target.closest('.preset');
+    const pr = (e.target as HTMLElement).closest('.preset') as HTMLElement | null;
     if (!pr) return;
-    resW.value = +pr.dataset.w;
-    resH.value = +pr.dataset.h;
-    S.resize.w = +pr.dataset.w;
-    S.resize.h = +pr.dataset.h;
+    resW.value = String(+pr.dataset.w!);
+    resH.value = String(+pr.dataset.h!);
+    S.resize.w = +pr.dataset.w!;
+    S.resize.h = +pr.dataset.h!;
     resLock.checked = true;
     S.resize.lock = true;
   });
@@ -160,10 +187,10 @@ export function renderCropPanel(p) {
   if (resizeApplyBtn) resizeApplyBtn.onclick = applyResizeOnly;
   if (resetBtn) resetBtn.onclick = () => {
     S.crop = { x:0, y:0, w:0, h:0, dragging:false, dragCorner:null, aspect:S.crop.aspect, moving:false, moveStartX:0, moveStartY:0, moveOrigX:0, moveOrigY:0, expand: S.crop.expand, fillColor: S.crop.fillColor, eyedropping: false };
-    resW.value = S.img.width;
-    resH.value = S.img.height;
-    S.resize.w = S.img.width;
-    S.resize.h = S.img.height;
+    resW.value = String(image.width);
+    resH.value = String(image.height);
+    S.resize.w = image.width;
+    S.resize.h = image.height;
     drawCropOverlay();
   };
 
@@ -247,7 +274,7 @@ export function renderCropPanel(p) {
       deactivateEyedropper();
       return;
     }
-    if (origCropDown) origCropDown(e);
+    if (origCropDown) origCropDown.call(oc, e);
   };
 
   expandReset.onclick = () => {
@@ -300,7 +327,7 @@ function cropGlobalUp() {
   S.crop.moving = false;
 }
 
-function getPos(e) {
+function getPos(e: MouseEvent) {
   const rect = oc.getBoundingClientRect();
   return {
     mx: Math.min(Math.max(e.clientX - rect.left, 0), oc.width),
@@ -308,17 +335,17 @@ function getPos(e) {
   };
 }
 
-function hitTest(mx, my, cx, cy, threshold) {
+function hitTest(mx: number, my: number, cx: number, cy: number, threshold: number) {
   return Math.abs(mx - cx) < threshold && Math.abs(my - cy) < threshold;
 }
 
-function cropDown(e) {
+function cropDown(e: MouseEvent) {
   const { mx, my } = getPos(e);
   const c = S.crop;
 
   if (c.w > 0) {
     // Check corners
-    const corners = [
+    const corners: Array<[number, number, string]> = [
       [c.x, c.y, 'tl'],
       [c.x + c.w, c.y, 'tr'],
       [c.x, c.y + c.h, 'bl'],
@@ -331,7 +358,7 @@ function cropDown(e) {
     }
 
     // Check edges
-    const edges = [
+    const edges: Array<[number, number, string]> = [
       [c.x + c.w/2, c.y, 'n'],
       [c.x + c.w/2, c.y + c.h, 's'],
       [c.x, c.y + c.h/2, 'w'],
@@ -358,7 +385,7 @@ function cropDown(e) {
   c.x = mx; c.y = my; c.w = 0; c.h = 0;
 }
 
-function cropMove(e) {
+function cropMove(e: MouseEvent) {
   const c = S.crop;
   const { mx, my } = getPos(e);
 
@@ -404,7 +431,7 @@ function cropMove(e) {
   drawCropOverlay();
 }
 
-function handleDrag(mx, my, c) {
+function handleDrag(mx: number, my: number, c: typeof S.crop) {
   const dc = c.dragCorner;
   if (dc === 'tl') { c.w += c.x - mx; c.h += c.y - my; c.x = mx; c.y = my; }
   else if (dc === 'tr') { c.w = mx - c.x; c.h += c.y - my; c.y = my; }
@@ -419,7 +446,7 @@ function handleDrag(mx, my, c) {
   if (c.aspect) constrainCropAspect();
 }
 
-function cropUp(e) {
+function cropUp(e: MouseEvent) {
   const c = S.crop;
   if (c.moving) {
     c.moving = false;
@@ -438,11 +465,13 @@ function cropUp(e) {
 
 // ==================== APPLY ====================
 async function applyCrop() {
+  const image = S.img;
+  if (!image) return;
   const c = S.crop;
   if (c.w < 5 || c.h < 5) { toast('Select an area first'); return; }
   pushHistory('Crop');
 
-  const scale = S.img.width / S.viewW;
+  const scale = image.width / S.viewW;
   const sx = Math.round((c.x - c.expand) * scale);
   const sy = Math.round((c.y - c.expand) * scale);
   const sw = Math.round(c.w * scale);
@@ -461,11 +490,11 @@ async function applyCrop() {
   const imgDrawY = Math.max(0, -sy);
   const imgSrcX = Math.max(0, sx);
   const imgSrcY = Math.max(0, sy);
-  const imgSrcW = Math.min(S.img.width - imgSrcX, sw - imgDrawX);
-  const imgSrcH = Math.min(S.img.height - imgSrcY, sh - imgDrawY);
+  const imgSrcW = Math.min(image.width - imgSrcX, sw - imgDrawX);
+  const imgSrcH = Math.min(image.height - imgSrcY, sh - imgDrawY);
 
   if (imgSrcW > 0 && imgSrcH > 0) {
-    tctx.drawImage(S.img, imgSrcX, imgSrcY, imgSrcW, imgSrcH, imgDrawX, imgDrawY, imgSrcW, imgSrcH);
+    tctx.drawImage(image, imgSrcX, imgSrcY, imgSrcW, imgSrcH, imgDrawX, imgDrawY, imgSrcW, imgSrcH);
   }
 
   S.img = await loadImageFromCanvas(tmp);
@@ -484,11 +513,13 @@ export function applyCropFromKeyboard() {
 }
 
 async function applyResizeOnly() {
-  let outW = S.resize.w || S.img.width;
-  let outH = S.resize.h || S.img.height;
+  const image = S.img;
+  if (!image) return;
+  let outW = S.resize.w || image.width;
+  let outH = S.resize.h || image.height;
 
   if (S.resize.lock) {
-    const srcRatio = S.img.width / S.img.height;
+    const srcRatio = image.width / image.height;
     const dstRatio = outW / outH;
     if (dstRatio > srcRatio) {
       outW = Math.round(outH * srcRatio);
@@ -497,13 +528,13 @@ async function applyResizeOnly() {
     }
   }
 
-  if (outW === S.img.width && outH === S.img.height) { toast('Change dimensions first'); return; }
+  if (outW === image.width && outH === image.height) { toast('Change dimensions first'); return; }
   pushHistory('Resize');
-  const isDownscale = outW < S.img.width || outH < S.img.height;
-  const result = isDownscale ? smartResize(canvasFromImage(S.img), outW, outH) : (() => {
+  const isDownscale = outW < image.width || outH < image.height;
+  const result = isDownscale ? smartResize(canvasFromImage(image), outW, outH) : (() => {
     const c = document.createElement('canvas');
     c.width = outW; c.height = outH;
-    c.getContext('2d').drawImage(S.img, 0, 0, outW, outH);
+    c.getContext('2d')!.drawImage(image, 0, 0, outW, outH);
     return c;
   })();
   S.img = await loadImageFromCanvas(result);
