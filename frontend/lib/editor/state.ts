@@ -1,5 +1,5 @@
 // ==================== SHARED STATE ====================
-export type EditorTool = 'crop' | 'resize' | 'grid' | 'bgremove' | 'rotate' | 'canva';
+export type EditorTool = 'crop' | 'resize' | 'grid' | 'bgremove' | 'rotate' | 'canva' | 'compressor';
 
 export interface HistoryEntry {
   dataURL: string;
@@ -55,10 +55,13 @@ export interface CanvaLayer {
   opacity: number;
   ratioLocked: boolean;
   ratio: number;
-  type: 'image' | 'text';
+  type: 'image' | 'text' | 'icon';
   text: string;
   fontSize: number;
   fontColor: string;
+  bold: boolean;
+  iconName: string;
+  iconColor: string;
 }
 
 export interface CanvaState {
@@ -111,6 +114,35 @@ export interface RotateSnapshot {
   createdAt: number;
 }
 
+export interface CompressorState {
+  format: 'image/jpeg' | 'image/webp';
+  quality: number;
+}
+
+export interface HandlePositions {
+  tl: { x: number; y: number };
+  tr: { x: number; y: number };
+  br: { x: number; y: number };
+  bl: { x: number; y: number };
+  tm: { x: number; y: number };
+  rm: { x: number; y: number };
+  bm: { x: number; y: number };
+  lm: { x: number; y: number };
+  rot: { x: number; y: number };
+}
+
+export interface ScaledHandles {
+  tl: { x: number; y: number };
+  tr: { x: number; y: number };
+  br: { x: number; y: number };
+  bl: { x: number; y: number };
+  tm: { x: number; y: number };
+  rm: { x: number; y: number };
+  bm: { x: number; y: number };
+  lm: { x: number; y: number };
+  rot: { x: number; y: number };
+}
+
 export interface EditorState {
   tool: EditorTool;
   img: HTMLImageElement | null;
@@ -130,6 +162,7 @@ export interface EditorState {
   bg: BackgroundRemovalState;
   canva: CanvaState;
   rotate: RotateState;
+  compressor: CompressorState;
 }
 
 export const S: EditorState = {
@@ -143,6 +176,7 @@ export const S: EditorState = {
   bg: { aiLoaded:false, aiLoading:false, refine:false, tol:30, feather:3, model:'isnet_fp16', enhance:false },
   canva: { layers:[], selectedIdx:-1, zoom:1, workspaceW:0, workspaceH:0, panning:false, dragging:false, dragCorner:null, moving:false, moveStartX:0, moveStartY:0, moveOrigX:0, moveOrigY:0, rotateOrigAngle:0, rotateStartAngle:0, resizeOrigX:0, resizeOrigY:0, resizeOrigW:0, resizeOrigH:0, resizeOrigAngle:0 },
   rotate: { angle:0, previewAngle:0, previewActive:false, snapshots:[], nextSnapshotId:1 },
+  compressor: { format: 'image/jpeg', quality: 80 },
 
   history: [], redoHistory: [], histIdx:-1
 };

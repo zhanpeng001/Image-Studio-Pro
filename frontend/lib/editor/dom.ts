@@ -16,6 +16,12 @@ export function optional$(id: string): EditorElement | null {
   return document.getElementById(id) as EditorElement | null;
 }
 
+export function getById<T extends HTMLElement>(id: string): T {
+  const el = document.getElementById(id);
+  if (!el) throw new Error('Missing element #' + id);
+  return el as T;
+}
+
 // Canvas elements. Bound during init so Nuxt remount/HMR can replace page DOM.
 export let mc: HTMLCanvasElement;
 export let oc: HTMLCanvasElement;
