@@ -12,11 +12,12 @@
 
 ## File Map
 
-- Create `frontend/lib/editor/tools/canva-layout.mjs`: pure functions for line wrapping and selected text visibility.
+- Create `frontend/lib/editor/tools/canva-layout.mjs`: pure functions for line wrapping, overlay geometry, and selected text visibility.
 - Create `frontend/test/canva-layout.test.mjs`: regression tests that run without browser or canvas mocking.
 - Modify `frontend/package.json`: expose `npm test` through Node's built-in runner.
-- Modify `frontend/lib/editor/tools/canva.ts`: import helpers, align text drawing within its centered layer rectangle, suppress selected HTML-backed text content, and use the common text layout during merge.
-- Preserve existing edits in `frontend/lib/editor/state.ts`, `frontend/lib/editor/tools/canva-icons.ts`, and `frontend/assets/css/editor.css` unless verification proves a specific correction is required.
+- Modify `frontend/lib/editor/tools/canva.ts`: import helpers, align text drawing within its centered layer rectangle, position the edit overlay in scroll-content coordinates, suppress selected HTML-backed text content, and use common text layout during merge.
+- Modify `frontend/lib/editor/tools/canva-icons.ts`: correct solid silhouette definitions incorrectly configured for stroke rendering.
+- Preserve existing edits in `frontend/lib/editor/state.ts` and `frontend/assets/css/editor.css` unless verification proves a specific correction is required.
 
 ### Task 1: Pure Canva Layout Regressions
 
@@ -35,7 +36,11 @@ Set the script in `frontend/package.json`:
 Create tests that import:
 
 ```javascript
-import { layoutCanvaText, shouldPaintLayerContent } from '../lib/editor/tools/canva-layout.mjs';
+import {
+  getCanvaTextOverlayRect,
+  layoutCanvaText,
+  shouldPaintLayerContent,
+} from '../lib/editor/tools/canva-layout.mjs';
 ```
 
 Cover these expected results:
@@ -43,6 +48,10 @@ Cover these expected results:
 ```javascript
 assert.deepEqual(layoutCanvaText('one\ntwo', 10, measure), ['one', 'two']);
 assert.deepEqual(layoutCanvaText('abcdefgh', 3, measure), ['abc', 'def', 'gh']);
+assert.deepEqual(
+  getCanvaTextOverlayRect({ x: 120, y: 80, w: 300, h: 60 }, 2),
+  { left: 240, top: 160, width: 600, height: 120 }
+);
 assert.equal(shouldPaintLayerContent({ type: 'text' }, true), false);
 assert.equal(shouldPaintLayerContent({ type: 'icon' }, true), true);
 ```
@@ -74,6 +83,15 @@ export function layoutCanvaText(text, maxWidth, measureText) {
   // any over-wide word into fitting segments.
 }
 
+export function getCanvaTextOverlayRect(layer, zoom) {
+  return {
+    left: layer.x * zoom,
+    top: layer.y * zoom,
+    width: layer.w * zoom,
+    height: layer.h * zoom,
+  };
+}
+
 export function shouldPaintLayerContent(layer, selected) {
   return !(selected && layer.type === 'text');
 }
@@ -90,12 +108,13 @@ cd frontend
 npm test
 ```
 
-Expected: PASS for all four helper regressions.
+Expected: PASS for all helper regressions.
 
 ### Task 3: Canvas Preview And Merge Repair
 
 **Files:**
 - Modify: `frontend/lib/editor/tools/canva.ts`
+- Modify: `frontend/lib/editor/tools/canva-icons.ts`
 - Test: `frontend/test/canva-layout.test.mjs`
 
 - [ ] **Step 1: Integrate the tested helpers**
@@ -103,7 +122,11 @@ Expected: PASS for all four helper regressions.
 Import:
 
 ```typescript
-import { layoutCanvaText, shouldPaintLayerContent } from './canva-layout.mjs';
+import {
+  getCanvaTextOverlayRect,
+  layoutCanvaText,
+  shouldPaintLayerContent,
+} from './canva-layout.mjs';
 ```
 
 Remove the local `wrapText()` function. For both workspace and merge rendering, call:
@@ -138,7 +161,13 @@ octx.fillText(lines[li], left, top + li * lineHeight);
 
 Use the same `left` and `top` rule with output-scaled dimensions in `mergeAllLayers()`, without skipping selected content during merge.
 
-- [ ] **Step 3: Run tests, type checking, and build**
+- [ ] **Step 3: Correct overlay scrolling and solid icon definitions**
+
+Use `getCanvaTextOverlayRect(sel, zoom)` in `showTextOverlay()` for `left`, `top`, `width`, and `height`. Do not subtract `canvasArea.scrollLeft` or `canvasArea.scrollTop`, because the absolutely positioned overlay is already contained inside the scrolling element.
+
+For icon definitions whose paths describe solid glyph silhouettes rather than open linework (`arrow`, `check`, `search`, `mail`, and `phone`), change `style` to `'fill'` so workspace and flattened output match their intended shape. Keep line-only definitions such as `cross`, `plus`, and `minus` as strokes.
+
+- [ ] **Step 4: Run tests, type checking, and build**
 
 Run:
 
@@ -176,4 +205,3 @@ npm run build
 ```
 
 Report interactive browser validation as unexecuted if the browser automation interface remains unavailable.
-

@@ -13,6 +13,8 @@ Investigation identified three defects in the text path:
 - Canvas text drawing applies the layer center transform, but draws text from positive padding rather than from the layer box origin at `(-w / 2, -h / 2)`. The HTML edit overlay uses the top-left layer box, so editing and rendered text do not line up.
 - A selected text layer remains painted to the canvas while its HTML overlay is shown, causing duplicate visible glyphs during editing and selection.
 - `wrapText()` tokenizes only on spaces, so explicit newlines are discarded and long words overflow rather than wrapping.
+- The HTML overlay is positioned inside the scrolling canvas area, but its coordinates subtract that area's scroll offsets. Scrolling therefore shifts editable text away from the canvas layer a second time.
+- Several new icon definitions are filled silhouette paths labeled for stroke rendering, causing their canvas appearance to be an outline artifact instead of the picker glyph's intended solid shape.
 
 The project currently has no frontend unit test runner configured. `npm run typecheck` and `npm run build` succeed but cannot catch these rendering defects because `canva.ts` opts out of TypeScript checks and interaction behavior is canvas-based.
 
@@ -22,6 +24,7 @@ The project currently has no frontend unit test runner configured. `npm run type
 
 - Preserve and finish icon layers already started in the working tree.
 - Repair text preview/edit alignment and duplicate rendering.
+- Keep selected text aligned with its canvas layer while the Canva workspace is scrolled or zoomed.
 - Preserve explicit newlines and wrap long unbroken text in text layers.
 - Keep icon layer selection, opacity, rotation, resize, ordering, deletion, and merge behavior consistent with other layer types.
 - Add a focused testable helper boundary for text layout and layer-render decisions, with automated regression tests.
@@ -60,6 +63,8 @@ When a text layer is selected, the HTML overlay is the visible text representati
 
 Icons render from the existing `ICON_DEFS` paths, scaled within the layer rectangle and colored with `iconColor`. The flatten operation uses the same local placement and transformation rules as the workspace preview.
 
+The text overlay is a child of the scrolling canvas area. Its position therefore uses scaled workspace coordinates only; browser scrolling provides the viewport offset. The overlay is not manually shifted by `scrollLeft` or `scrollTop`.
+
 ## Text Layout
 
 Text line construction moves into a small pure helper that accepts text and a width-measure function. It must:
@@ -73,7 +78,7 @@ Both workspace rendering and flattened rendering consume the same line output so
 
 ## Panel And Interaction
 
-The in-progress Add Icon picker remains in the Canva panel. Choosing an icon creates a centered icon layer, selects it, and exposes icon color along with common transform controls. Icon layers participate in the existing layer list, selection, handles, ordering, deletion, and merge action.
+The in-progress Add Icon picker remains in the Canva panel. Choosing an icon creates a centered icon layer, selects it, and exposes icon color along with common transform controls. Icon layers participate in the existing layer list, selection, handles, ordering, deletion, and merge action. Definitions whose SVG paths are solid shapes are rendered as fills in both preview and merge, matching the picker rather than outlining their silhouette.
 
 Text selection behavior remains as previously designed: a text layer overlay appears when selected and becomes editable for a newly created empty layer or on double-click. Font-size and color edits update both overlay state and subsequent canvas/flatten rendering.
 
@@ -93,6 +98,7 @@ Regression tests cover:
 
 - Explicit newline preservation.
 - Long-word wrapping.
+- Overlay geometry based on scaled workspace coordinates rather than duplicated scroll offsets.
 - Text layer content suppression while the layer is selected for overlay display.
 - Icon layer content remaining renderable while selected.
 
@@ -116,4 +122,3 @@ Browser-based click-through validation would additionally cover adding text, edi
 - `frontend/lib/editor/tools/canva-layout.mjs`: pure text layout/render-decision helpers.
 - `frontend/test/canva-layout.test.mjs`: focused regression tests.
 - `frontend/package.json`: add the unit-test command.
-
