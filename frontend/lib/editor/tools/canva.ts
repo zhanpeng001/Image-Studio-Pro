@@ -4,6 +4,14 @@ import { oc, octx, mc } from '../dom.js';
 import { pushHistory } from '../history.js';
 import { toast } from '../ui.js';
 import { computeCanvaMergeGeometry } from './canva-geometry.js';
+import { ICON_DEFS, ICON_NAMES } from './canva-icons.js';
+import {
+  getCanvaTextOverlayRect,
+  layoutCanvaText,
+  readCanvaEditableText,
+  shouldPaintLayerContent,
+} from './canva-layout.mjs';
+import { buildColorPresetsHTML, highlightPreset, wireColorPresets, triggerDownload } from '../utils.js';
 
 let cleanupEvents: (() => void) | null = null;
 
@@ -111,14 +119,42 @@ export function renderCanvaPanel(p) {
   const isText = sel && sel.type === 'text';
   html += '<div id="canvaTextControls" style="display:' + (isText ? 'flex' : 'none') + ';flex-direction:column;gap:8px;">';
   html += '<div class="col"><label>Font Size</label>';
-  html += '<input type="number" id="canvaFontSize" value="' + (isText ? sel.fontSize : 24) + '" min="8" max="512" style="width:100%;"></div>';
+  html += '<div class="expand-row">';
+  html += '<span class="expand-btn" id="canvaFontSizeMinus">-</span>';
+  html += '<input type="number" class="expand-input" id="canvaFontSizeVal" value="' + (isText ? sel.fontSize : 24) + '" min="8" max="512" style="width:52px;text-align:center;">';
+  html += '<span class="expand-btn" id="canvaFontSizePlus">+</span>';
+  html += '</div></div>';
+  html += '<label><input type="checkbox" id="canvaBold"' + (isText && sel.bold ? ' checked' : '') + '> Bold</label>';
   html += '<div class="col"><label>Text Color</label>';
   html += '<div class="row" style="align-items:center;gap:8px;">';
-  html += '<input type="color" id="canvaFontColor" value="' + (isText ? sel.fontColor : '#ffffff') + '" style="width:36px;height:36px;border:none;border-radius:4px;cursor:pointer;padding:0;">';
+  html += '<input type="color" id="canvaFontColor" value="' + (isText ? sel.fontColor : '#ffffff') + '" style="width:28px;height:28px;border:none;border-radius:4px;cursor:pointer;padding:0;">';
   html += '<span id="canvaFontColorHex" style="font-size:12px;color:var(--text3);">' + (isText ? sel.fontColor : '#ffffff') + '</span>';
-  html += '</div></div>';
+  html += '</div>';
+  html += buildColorPresetsHTML('canvaFontPresets', isText ? sel.fontColor : '#ffffff');
+  html += '</div>';
   html += '<div class="divider" id="canvaTextDivider" style="display:' + (isText ? 'block' : 'none') + ';"></div>';
   html += '</div>'; // end canvaTextControls
+
+  // Icon-specific controls (only for icon layers)
+  const isIcon = sel && sel.type === 'icon';
+  html += '<div id="canvaIconControls" style="display:' + (isIcon ? 'flex' : 'none') + ';flex-direction:column;gap:8px;">';
+  html += '<div class="col"><label>Icon</label>';
+  html += '<span id="canvaIconName" style="font-size:13px;color:var(--text);padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);">' + (isIcon ? sel.iconName : '') + '</span></div>';
+  html += '<div class="col"><label>Size</label>';
+  html += '<div class="expand-row">';
+  html += '<span class="expand-btn" id="canvaIconSizeMinus">-</span>';
+  html += '<input type="number" class="expand-input" id="canvaIconSizeVal" value="' + (isIcon ? Math.round(Math.min(sel.w, sel.h)) : 120) + '" min="16" max="2048" style="width:52px;text-align:center;">';
+  html += '<span class="expand-btn" id="canvaIconSizePlus">+</span>';
+  html += '</div></div>';
+  html += '<div class="col"><label>Icon Color</label>';
+  html += '<div class="row" style="align-items:center;gap:8px;">';
+  html += '<input type="color" id="canvaIconColor" value="' + (isIcon ? (sel.iconColor || '#ffffff') : '#ffffff') + '" style="width:28px;height:28px;border:none;border-radius:4px;cursor:pointer;padding:0;">';
+  html += '<span id="canvaIconColorHex" style="font-size:12px;color:var(--text3);">' + (isIcon ? (sel.iconColor || '#ffffff') : '#ffffff') + '</span>';
+  html += '</div>';
+  html += buildColorPresetsHTML('canvaIconPresets', isIcon ? (sel.iconColor || '#ffffff') : '#ffffff');
+  html += '</div>';
+  html += '<div class="divider" id="canvaIconDivider" style="display:' + (isIcon ? 'block' : 'none') + ';"></div>';
+  html += '</div>'; // end canvaIconControls
 
   html += '<div class="col"><label>Opacity: <span class="val" id="canvaOpacityVal">' + (sel ? Math.round(sel.opacity * 100) + '%' : '100%') + '</span></label>';
   html += '<input type="range" id="canvaOpacity" min="5" max="100" value="' + (sel ? Math.round(sel.opacity * 100) : 100) + '"></div>';
@@ -136,6 +172,18 @@ export function renderCanvaPanel(p) {
   html += '<button class="btn primary btn-block" id="canvaAddLayer" style="flex:1;">Add Image</button>';
   html += '<button class="btn primary btn-block" id="canvaAddText" style="flex:1;">Add Text</button>';
   html += '</div>';
+  html += '<button class="btn btn-block" id="canvaAddIcon">Add Icon</button>';
+  html += '<div id="canvaIconPicker" style="display:none;">';
+  for (const iconName of ICON_NAMES) {
+    const iconDef = ICON_DEFS[iconName];
+    const iconPaint = iconDef.style === 'fill'
+      ? ' fill="currentColor"'
+      : ' fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
+    html += '<button class="canva-icon-btn" data-icon="' + iconName + '" title="' + iconName + '">';
+    html += '<svg width="18" height="18" viewBox="0 0 24 24"' + iconPaint + '><path d="' + iconDef.path.replace(/"/g, '&quot;') + '"/></svg>';
+    html += '</button>';
+  }
+  html += '</div>';
   html += '<button class="btn btn-block" id="canvaRemoveLayer"' + (c.selectedIdx <= 0 ? ' disabled' : '') + '>Remove Layer</button>';
   html += '<div class="row" style="gap:4px;">';
   html += '<button class="btn btn-block" id="canvaSendBackward" title="Send backward"' + (c.selectedIdx <= 0 ? ' disabled' : '') + '>Back</button>';
@@ -143,6 +191,11 @@ export function renderCanvaPanel(p) {
   html += '</div>';
   html += '<div class="divider"></div>';
   html += '<button class="btn btn-block" id="canvaMergeAll" style="background:var(--success);color:#fff;">Merge All & Flatten</button>';
+  html += '<div class="row" style="gap:4px;margin-top:4px;">';
+  html += '<button class="btn btn-block" id="canvaSaveProject">Save Project</button>';
+  html += '<button class="btn btn-block" id="canvaLoadProject">Load Project</button>';
+  html += '</div>';
+  html += '<input type="file" id="canvaLoadFile" accept=".canva.json" style="display:none;">';
   html += '</div>';
 
   html += '<p class="hint" style="margin-top:8px;">Click to select & move. Double-click text to edit. Corner/edge handles to resize. Top handle to rotate. Enter to merge.</p>';
@@ -195,12 +248,88 @@ export function renderCanvaPanel(p) {
   const addTextBtn = document.getElementById('canvaAddText');
   if (addTextBtn) addTextBtn.onclick = () => addTextLayer();
 
-  const fontSizeInput = document.getElementById('canvaFontSize');
-  if (fontSizeInput && sel && sel.type === 'text') {
-    fontSizeInput.oninput = () => {
-      sel.fontSize = Math.max(8, Math.min(512, +fontSizeInput.value || 24));
-      fontSizeInput.value = sel.fontSize;
+  const addIconBtn = document.getElementById('canvaAddIcon');
+  if (addIconBtn) {
+    addIconBtn.onclick = () => {
+      const picker = document.getElementById('canvaIconPicker');
+      if (!picker) return;
+      const showing = picker.style.display === 'grid';
+      picker.style.display = showing ? 'none' : 'grid';
+    };
+  }
+
+  // Wire icon picker buttons
+  const iconPickerEl = document.getElementById('canvaIconPicker');
+  if (iconPickerEl) {
+    Array.from(iconPickerEl.querySelectorAll('.canva-icon-btn')).forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const iconName = (btn as HTMLElement).dataset.icon;
+        if (iconName) addIconLayer(iconName);
+        iconPickerEl.style.display = 'none';
+      });
+    });
+  }
+
+  const iconColorInput = document.getElementById('canvaIconColor');
+  if (iconColorInput && sel && sel.type === 'icon') {
+    iconColorInput.oninput = () => {
+      sel.iconColor = iconColorInput.value;
+      const hexEl = document.getElementById('canvaIconColorHex');
+      if (hexEl) hexEl.textContent = iconColorInput.value;
+      highlightPreset('canvaIconPresets', iconColorInput.value);
+      drawCanvaAll();
+    };
+  }
+
+  if (sel && sel.type === 'icon') {
+    wireColorPresets('canvaIconPresets', c => {
+      sel.iconColor = c;
+      if (iconColorInput) iconColorInput.value = c;
+      const hexEl = document.getElementById('canvaIconColorHex');
+      if (hexEl) hexEl.textContent = c;
+      highlightPreset('canvaIconPresets', c);
+      drawCanvaAll();
+    });
+  }
+
+  const iconSizeVal = document.getElementById('canvaIconSizeVal') as HTMLInputElement | null;
+  const iconSizeMinus = document.getElementById('canvaIconSizeMinus');
+  const iconSizePlus = document.getElementById('canvaIconSizePlus');
+  if (sel && sel.type === 'icon') {
+    const syncIconSize = (s: number) => {
+      const clamped = Math.max(16, Math.min(2048, s));
+      const ratio = sel.ratioLocked ? sel.ratio : sel.w / sel.h;
+      sel.w = Math.round(clamped * ratio);
+      sel.h = clamped;
+      if (iconSizeVal) iconSizeVal.value = String(clamped);
+      drawCanvaAll();
+    };
+    iconSizeMinus?.addEventListener('click', () => syncIconSize(Math.min(sel.w, sel.h) - 10));
+    iconSizePlus?.addEventListener('click', () => syncIconSize(Math.min(sel.w, sel.h) + 10));
+    iconSizeVal?.addEventListener('input', () => syncIconSize(+iconSizeVal.value || 120));
+  }
+
+  const fontSizeVal = document.getElementById('canvaFontSizeVal') as HTMLInputElement | null;
+  const fontSizeMinus = document.getElementById('canvaFontSizeMinus');
+  const fontSizePlus = document.getElementById('canvaFontSizePlus');
+  if (sel && sel.type === 'text') {
+    const syncFontSize = (s: number) => {
+      sel.fontSize = Math.max(8, Math.min(512, s));
+      if (fontSizeVal) fontSizeVal.value = String(sel.fontSize);
       showTextOverlay();
+      drawCanvaAll();
+    };
+    fontSizeMinus?.addEventListener('click', () => syncFontSize((sel.fontSize || 24) - 1));
+    fontSizePlus?.addEventListener('click', () => syncFontSize((sel.fontSize || 24) + 1));
+    fontSizeVal?.addEventListener('input', () => syncFontSize(+fontSizeVal.value || 24));
+  }
+
+  const boldCheckbox = document.getElementById('canvaBold') as HTMLInputElement | null;
+  if (boldCheckbox && sel && sel.type === 'text') {
+    boldCheckbox.onchange = () => {
+      sel.bold = boldCheckbox.checked;
+      drawCanvaAll();
     };
   }
 
@@ -210,8 +339,22 @@ export function renderCanvaPanel(p) {
       sel.fontColor = fontColorInput.value;
       const hexEl = document.getElementById('canvaFontColorHex');
       if (hexEl) hexEl.textContent = fontColorInput.value;
+      highlightPreset('canvaFontPresets', fontColorInput.value);
       showTextOverlay();
+      drawCanvaAll();
     };
+  }
+
+  if (sel && sel.type === 'text') {
+    wireColorPresets('canvaFontPresets', c => {
+      sel.fontColor = c;
+      if (fontColorInput) fontColorInput.value = c;
+      const hexEl = document.getElementById('canvaFontColorHex');
+      if (hexEl) hexEl.textContent = c;
+      highlightPreset('canvaFontPresets', c);
+      showTextOverlay();
+      drawCanvaAll();
+    });
   }
 
   const removeBtn = document.getElementById('canvaRemoveLayer');
@@ -251,6 +394,21 @@ export function renderCanvaPanel(p) {
   const mergeBtn = document.getElementById('canvaMergeAll');
   if (mergeBtn) mergeBtn.onclick = mergeAllLayers;
 
+  // Save / Load project
+  const saveBtn = document.getElementById('canvaSaveProject');
+  if (saveBtn) saveBtn.onclick = () => saveCanvaProject();
+
+  const loadBtn = document.getElementById('canvaLoadProject');
+  const loadFile = document.getElementById('canvaLoadFile');
+  if (loadBtn && loadFile) {
+    loadBtn.onclick = () => loadFile.click();
+    loadFile.onchange = () => {
+      if (!loadFile.files?.length) return;
+      loadCanvaProject(loadFile.files[0]);
+      loadFile.value = '';
+    };
+  }
+
   // Zoom controls
   const zoomSlider = document.getElementById('canvaZoom');
   const zoomVal = document.getElementById('canvaZoomVal');
@@ -280,7 +438,6 @@ export function renderCanvaPanel(p) {
   drawCanvaAll();
 
   // Sync text overlay
-  const sel = c.selectedIdx >= 0 ? c.layers[c.selectedIdx] : null;
   if (sel && sel.type === 'text') {
     showTextOverlay();
     if (!sel.text && !textOverlayEditing) {
@@ -325,13 +482,35 @@ function addTextLayer() {
   toast('Text layer added — type to edit');
 }
 
+function addIconLayer(iconName: string) {
+  const c = S.canva;
+  if (c.workspaceW === 0) return;
+  const canvasArea = document.getElementById('canvasArea')!;
+  const viewCX = (canvasArea.scrollLeft + canvasArea.clientWidth / 2) / c.zoom;
+  const viewCY = (canvasArea.scrollTop + canvasArea.clientHeight / 2) / c.zoom;
+  const size = 120;
+  const x = Math.round(viewCX - size / 2);
+  const y = Math.round(viewCY - size / 2);
+  const layer = createIconLayer(x, y, size, size, iconName);
+  c.layers.push(layer);
+  c.selectedIdx = c.layers.length - 1;
+  drawCanvaAll();
+  const panel = document.getElementById('panel');
+  if (panel) renderCanvaPanel(panel);
+  toast('Icon "' + iconName + '" added');
+}
+
 // ==================== LAYER HELPERS ====================
 function createLayer(img, x, y, w, h): any {
-  return { img, x, y, w, h, angle: 0, opacity: 1, ratioLocked: false, ratio: w / h, type: 'image', text: '', fontSize: 24, fontColor: '#ffffff' };
+  return { img, x, y, w, h, angle: 0, opacity: 1, ratioLocked: false, ratio: w / h, type: 'image', text: '', fontSize: 24, fontColor: '#ffffff', bold: false, iconName: '', iconColor: '#ffffff' };
 }
 
 function createTextLayer(x: number, y: number, w: number, h: number): any {
-  return { img: null, x, y, w, h, angle: 0, opacity: 1, ratioLocked: false, ratio: w / h, type: 'text', text: '', fontSize: 24, fontColor: '#ffffff' };
+  return { img: null, x, y, w, h, angle: 0, opacity: 1, ratioLocked: false, ratio: w / h, type: 'text', text: '', fontSize: 24, fontColor: '#ffffff', bold: false, iconName: '', iconColor: '#ffffff' };
+}
+
+function createIconLayer(x: number, y: number, w: number, h: number, iconName: string): any {
+  return { img: null, x, y, w, h, angle: 0, opacity: 1, ratioLocked: false, ratio: w / h, type: 'icon', text: '', fontSize: 24, fontColor: '#ffffff', bold: false, iconName, iconColor: '#ffffff' };
 }
 
 // ==================== TEXT OVERLAY ====================
@@ -343,7 +522,7 @@ function getTextOverlay(): HTMLDivElement {
     textOverlay = document.createElement('div');
     textOverlay.id = 'canvaTextOverlay';
     textOverlay.contentEditable = 'false';
-    textOverlay.style.cssText = 'position:absolute;display:none;z-index:10;pointer-events:none;outline:none;overflow:hidden;word-wrap:break-word;white-space:pre-wrap;font-family:sans-serif;line-height:1.3;border:2px dashed #58a6ff;border-radius:2px;background:transparent;';
+    textOverlay.style.cssText = 'position:absolute;display:none;z-index:10;pointer-events:none;overflow:hidden;word-wrap:break-word;white-space:pre-wrap;font-family:sans-serif;line-height:1.3;border:0;border-radius:2px;background:transparent;';
     const canvasAreaEl = document.getElementById('canvasArea')!;
     canvasAreaEl.style.position = canvasAreaEl.style.position || 'relative';
     canvasAreaEl.appendChild(textOverlay);
@@ -353,7 +532,7 @@ function getTextOverlay(): HTMLDivElement {
       if (c.selectedIdx >= 0) {
         const sel = c.layers[c.selectedIdx];
         if (sel.type === 'text') {
-          sel.text = textOverlay!.textContent || '';
+          sel.text = readCanvaEditableText(textOverlay!);
         }
       }
     });
@@ -372,22 +551,20 @@ function showTextOverlay() {
   const sel = c.layers[c.selectedIdx];
   if (sel.type !== 'text') { overlay.style.display = 'none'; return; }
 
-  const canvasAreaEl = document.getElementById('canvasArea')!;
   const zoom = c.zoom;
-  const left = sel.x * zoom - canvasAreaEl.scrollLeft;
-  const top = sel.y * zoom - canvasAreaEl.scrollTop;
-  const w = sel.w * zoom;
-  const h = sel.h * zoom;
+  const rect = getCanvaTextOverlayRect(sel, zoom);
 
   overlay.style.display = 'block';
-  overlay.style.left = left + 'px';
-  overlay.style.top = top + 'px';
-  overlay.style.width = w + 'px';
-  overlay.style.height = h + 'px';
+  overlay.style.left = rect.left + 'px';
+  overlay.style.top = rect.top + 'px';
+  overlay.style.width = rect.width + 'px';
+  overlay.style.height = rect.height + 'px';
   overlay.style.fontSize = (sel.fontSize * zoom) + 'px';
   overlay.style.color = sel.fontColor;
+  overlay.style.fontWeight = sel.bold ? 'bold' : 'normal';
+  overlay.style.opacity = String(sel.opacity);
   overlay.style.padding = (4 * zoom) + 'px';
-  overlay.style.borderWidth = (2 * zoom) + 'px';
+  overlay.style.outlineWidth = (2 * zoom) + 'px';
 
   if (sel.angle !== 0) {
     overlay.style.transformOrigin = 'center center';
@@ -430,6 +607,7 @@ function exitTextEdit() {
   textOverlayEditing = false;
   overlay.contentEditable = 'false';
   overlay.style.pointerEvents = 'none';
+  drawCanvaAll();
 }
 
 function hideTextOverlay() {
@@ -437,24 +615,6 @@ function hideTextOverlay() {
     textOverlay.style.display = 'none';
   }
   textOverlayEditing = false;
-}
-
-function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
-  const words = text.split(' ');
-  const lines: string[] = [];
-  let currentLine = '';
-  for (const word of words) {
-    const testLine = currentLine ? currentLine + ' ' + word : word;
-    const metrics = ctx.measureText(testLine);
-    if (metrics.width > maxWidth && currentLine) {
-      lines.push(currentLine);
-      currentLine = word;
-    } else {
-      currentLine = testLine;
-    }
-  }
-  if (currentLine) lines.push(currentLine);
-  return lines.length > 0 ? lines : [''];
 }
 
 function loadOverlayLayer(file) {
@@ -653,6 +813,7 @@ function drawCanvaAll() {
 
   // Draw layers (layer coords are workspace units, multiply by zoom for canvas pixels)
   for (const layer of c.layers) {
+    const selected = c.selectedIdx >= 0 && c.layers[c.selectedIdx] === layer;
     const cx = (layer.x + layer.w / 2) * zoom;
     const cy = (layer.y + layer.h / 2) * zoom;
     const w = layer.w * zoom;
@@ -662,19 +823,40 @@ function drawCanvaAll() {
     octx.rotate(layer.angle * Math.PI / 180);
     octx.globalAlpha = layer.opacity;
 
-    if (layer.type === 'text') {
-      octx.font = (layer.fontSize * zoom) + 'px sans-serif';
+    if (shouldPaintLayerContent(layer, selected) && layer.type === 'text') {
+      octx.font = (layer.bold ? 'bold ' : '') + (layer.fontSize * zoom) + 'px sans-serif';
       octx.fillStyle = layer.fontColor;
       octx.textBaseline = 'top';
       const padding = 4 * zoom;
-      const lines = wrapText(octx, layer.text || '', w - padding * 2);
+      const lines = layoutCanvaText(layer.text || '', w - padding * 2, value => octx.measureText(value).width);
       const lineHeight = layer.fontSize * zoom * 1.3;
+      const left = -w / 2 + padding;
+      const top = -h / 2 + padding;
       for (let li = 0; li < lines.length; li++) {
-        const ly = padding + li * lineHeight;
-        if (ly + lineHeight > h) break;
-        octx.fillText(lines[li], padding, ly);
+        const ly = top + li * lineHeight;
+        if (ly + lineHeight > h / 2) break;
+        octx.fillText(lines[li], left, ly);
       }
-    } else if (layer.img) {
+    } else if (shouldPaintLayerContent(layer, selected) && layer.type === 'icon' && ICON_DEFS[layer.iconName]) {
+      const def = ICON_DEFS[layer.iconName];
+      const iconSize = Math.min(w, h);
+      const s = iconSize / 24;
+      const ox = (w - 24 * s) / 2;
+      const oy = (h - 24 * s) / 2;
+      octx.translate(-w / 2 + ox, -h / 2 + oy);
+      octx.scale(s, s);
+      const path = new Path2D(def.path);
+      if (def.style === 'fill') {
+        octx.fillStyle = layer.iconColor || '#ffffff';
+        octx.fill(path);
+      } else {
+        octx.strokeStyle = layer.iconColor || '#ffffff';
+        octx.lineWidth = 2;
+        octx.lineCap = 'round';
+        octx.lineJoin = 'round';
+        octx.stroke(path);
+      }
+    } else if (shouldPaintLayerContent(layer, selected) && layer.img) {
       octx.drawImage(layer.img, -w / 2, -h / 2, w, h);
     }
 
@@ -1118,16 +1300,37 @@ async function mergeAllLayers() {
     const lh = layer.h * scaleY;
 
     if (layer.type === 'text') {
-      outCtx.font = (layer.fontSize * scaleX) + 'px sans-serif';
+      outCtx.font = (layer.bold ? 'bold ' : '') + (layer.fontSize * scaleX) + 'px sans-serif';
       outCtx.fillStyle = layer.fontColor;
       outCtx.textBaseline = 'top';
       const padding = 4 * scaleX;
-      const lines = wrapText(outCtx, layer.text || '', lw - padding * 2);
+      const lines = layoutCanvaText(layer.text || '', lw - padding * 2, value => outCtx.measureText(value).width);
       const lineHeight = layer.fontSize * scaleX * 1.3;
+      const left = -lw / 2 + padding;
+      const top = -lh / 2 + padding;
       for (let li = 0; li < lines.length; li++) {
-        const ly = padding + li * lineHeight;
-        if (ly + lineHeight > lh) break;
-        outCtx.fillText(lines[li], padding, ly);
+        const ly = top + li * lineHeight;
+        if (ly + lineHeight > lh / 2) break;
+        outCtx.fillText(lines[li], left, ly);
+      }
+    } else if (layer.type === 'icon' && ICON_DEFS[layer.iconName]) {
+      const def = ICON_DEFS[layer.iconName];
+      const iconSize = Math.min(lw, lh);
+      const s = iconSize / 24;
+      const ox = (lw - 24 * s) / 2;
+      const oy = (lh - 24 * s) / 2;
+      outCtx.translate(-lw / 2 + ox, -lh / 2 + oy);
+      outCtx.scale(s, s);
+      const path = new Path2D(def.path);
+      if (def.style === 'fill') {
+        outCtx.fillStyle = layer.iconColor || '#ffffff';
+        outCtx.fill(path);
+      } else {
+        outCtx.strokeStyle = layer.iconColor || '#ffffff';
+        outCtx.lineWidth = 2;
+        outCtx.lineCap = 'round';
+        outCtx.lineJoin = 'round';
+        outCtx.stroke(path);
       }
     } else if (layer.img) {
       outCtx.drawImage(layer.img, -lw / 2, -lh / 2, lw, lh);
@@ -1159,4 +1362,95 @@ async function mergeAllLayers() {
   const panel = document.getElementById('panel');
   if (panel) renderCanvaPanel(panel);
   toast('All layers merged');
+}
+
+function imageToDataURL(img: HTMLImageElement): string {
+  const canvas = document.createElement('canvas');
+  canvas.width = img.naturalWidth || img.width;
+  canvas.height = img.naturalHeight || img.height;
+  const ctx = canvas.getContext('2d')!;
+  ctx.drawImage(img, 0, 0);
+  return canvas.toDataURL('image/png');
+}
+
+function saveCanvaProject() {
+  const c = S.canva;
+  if (c.layers.length === 0) { toast('Nothing to save'); return; }
+  const layers = c.layers.map(l => {
+    const base: any = {
+      type: l.type, x: l.x, y: l.y, w: l.w, h: l.h,
+      angle: l.angle, opacity: l.opacity, ratioLocked: l.ratioLocked, ratio: l.ratio,
+    };
+    if (l.type === 'image' && l.img) {
+      base.imgData = imageToDataURL(l.img);
+    } else if (l.type === 'text') {
+      base.text = l.text; base.fontSize = l.fontSize;
+      base.fontColor = l.fontColor; base.bold = l.bold;
+    } else if (l.type === 'icon') {
+      base.iconName = l.iconName; base.iconColor = l.iconColor;
+    }
+    return base;
+  });
+  const project = { version: 1, workspaceW: c.workspaceW, workspaceH: c.workspaceH, zoom: c.zoom, layers };
+  const blob = new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' });
+  triggerDownload(blob, 'project.canva.json');
+  toast('Project saved');
+}
+
+function loadCanvaProject(file: File) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const project = JSON.parse(reader.result as string);
+      if (!project.layers?.length) { toast('Invalid project file'); return; }
+      const c = S.canva;
+      c.workspaceW = project.workspaceW || 1920;
+      c.workspaceH = project.workspaceH || 1080;
+      const zoom = project.zoom || 1;
+      const loadCount = project.layers.length;
+      let loaded = 0;
+      const newLayers: any[] = new Array(project.layers.length);
+      project.layers.forEach((l: any, i: number) => {
+        const layer: any = {
+          x: l.x, y: l.y, w: l.w, h: l.h,
+          angle: l.angle || 0, opacity: l.opacity ?? 1,
+          ratioLocked: l.ratioLocked || false, ratio: l.ratio || l.w / l.h,
+          type: l.type,
+          text: l.text || '', fontSize: l.fontSize || 24,
+          fontColor: l.fontColor || '#ffffff', bold: l.bold || false,
+          iconName: l.iconName || '', iconColor: l.iconColor || '#ffffff',
+          img: null,
+        };
+        if (l.type === 'image' && l.imgData) {
+          const img = new Image();
+          img.onload = () => {
+            layer.img = img;
+            loaded++;
+            if (loaded === loadCount) finishLoad(newLayers, zoom);
+          };
+          img.src = l.imgData;
+        } else {
+          loaded++;
+          if (loaded === loadCount) finishLoad(newLayers, zoom);
+        }
+        newLayers[i] = layer;
+      });
+    } catch { toast('Failed to parse project file'); }
+  };
+  reader.readAsText(file);
+}
+
+function finishLoad(layers: any[], zoom: number) {
+  const c = S.canva;
+  c.layers = layers;
+  c.selectedIdx = layers.length > 0 ? 0 : -1;
+  applyCanvaZoom(zoom, { ax: 0, ay: 0 });
+  drawCanvaAll();
+  if (layers.length > 0) {
+    const sel = c.layers[0];
+    if (sel.type === 'text') showTextOverlay();
+  }
+  const panel = document.getElementById('panel');
+  if (panel) renderCanvaPanel(panel);
+  toast('Project loaded (' + layers.length + ' layers)');
 }

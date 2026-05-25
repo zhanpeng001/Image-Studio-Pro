@@ -6,6 +6,7 @@ import { pushHistory } from '../history.js';
 import { drawCropOverlay } from '../overlay.js';
 import { toast } from '../ui.js';
 import { smartResize } from '../lanczos.js';
+import { canvasFromImage, loadImageFromCanvas, buildColorPresetsHTML, highlightPreset, wireColorPresets } from '../utils.js';
 
 // ==================== PANEL ====================
 export function renderCropPanel(p) {
@@ -47,6 +48,7 @@ export function renderCropPanel(p) {
         <span class="expand-reset" id="expandReset">reset</span>
       </div>
     </div>
+      ${buildColorPresetsHTML('cropColorPresets', S.crop.fillColor)}
     <div class="divider"></div>
     <div class="col">
       <label>Resize Output</label>
@@ -195,6 +197,7 @@ export function renderCropPanel(p) {
     S.crop.fillColor = color;
     fillColorPicker.value = color;
     colorSwatch.style.background = color;
+    highlightPreset('cropColorPresets', color);
     if (S.crop.expand > 0) {
       renderCropExpand();
       drawCropOverlay();
@@ -203,6 +206,9 @@ export function renderCropPanel(p) {
 
   colorSwatch.onclick = () => fillColorPicker.click();
   fillColorPicker.oninput = () => applyFillColor(fillColorPicker.value);
+
+  // Wire preset color swatches
+  wireColorPresets('cropColorPresets', color => applyFillColor(color));
 
   const activateEyedropper = () => {
     S.crop.eyedropping = true;
@@ -251,6 +257,7 @@ export function renderCropPanel(p) {
     expandVal.textContent = '0 px';
     fillColorPicker.value = '#FFFFFF';
     colorSwatch.style.background = '#FFFFFF';
+    highlightPreset('cropColorPresets', '#FFFFFF');
     restoreCropCanvas();
     renderAll();
     drawCropOverlay();
@@ -430,7 +437,7 @@ function cropUp(e) {
 }
 
 // ==================== APPLY ====================
-function applyCrop() {
+async function applyCrop() {
   const c = S.crop;
   if (c.w < 5 || c.h < 5) { toast('Select an area first'); return; }
   pushHistory('Crop');
@@ -461,17 +468,13 @@ function applyCrop() {
     tctx.drawImage(S.img, imgSrcX, imgSrcY, imgSrcW, imgSrcH, imgDrawX, imgDrawY, imgSrcW, imgSrcH);
   }
 
-  const nimg = new Image();
-  nimg.onload = () => {
-    S.img = nimg;
-    if (S.crop.expand > 0) {
-      restoreCropCanvas();
-    }
-    fitImage(); renderAll();
-    S.crop = { x:0, y:0, w:0, h:0, dragging:false, dragCorner:null, aspect:S.crop.aspect, moving:false, moveStartX:0, moveStartY:0, moveOrigX:0, moveOrigY:0, expand:0, fillColor:'#FFFFFF', eyedropping:false };
-    toast('Cropped to ' + sw + 'x' + sh);
-  };
-  nimg.src = tmp.toDataURL('image/png');
+  S.img = await loadImageFromCanvas(tmp);
+  if (S.crop.expand > 0) {
+    restoreCropCanvas();
+  }
+  fitImage(); renderAll();
+  S.crop = { x:0, y:0, w:0, h:0, dragging:false, dragCorner:null, aspect:S.crop.aspect, moving:false, moveStartX:0, moveStartY:0, moveOrigX:0, moveOrigY:0, expand:0, fillColor:'#FFFFFF', eyedropping:false };
+  toast('Cropped to ' + sw + 'x' + sh);
 }
 
 export function applyCropFromKeyboard() {
@@ -480,15 +483,7 @@ export function applyCropFromKeyboard() {
   }
 }
 
-function canvasFromImage(img) {
-  const c = document.createElement('canvas');
-  c.width = img.width;
-  c.height = img.height;
-  c.getContext('2d').drawImage(img, 0, 0);
-  return c;
-}
-
-function applyResizeOnly() {
+async function applyResizeOnly() {
   let outW = S.resize.w || S.img.width;
   let outH = S.resize.h || S.img.height;
 
@@ -511,11 +506,7 @@ function applyResizeOnly() {
     c.getContext('2d').drawImage(S.img, 0, 0, outW, outH);
     return c;
   })();
-  const nimg = new Image();
-  nimg.onload = () => {
-    S.img = nimg;
-    fitImage(); renderAll();
-    toast('Resized to ' + outW + 'x' + outH);
-  };
-  nimg.src = result.toDataURL('image/png');
+  S.img = await loadImageFromCanvas(result);
+  fitImage(); renderAll();
+  toast('Resized to ' + outW + 'x' + outH);
 }

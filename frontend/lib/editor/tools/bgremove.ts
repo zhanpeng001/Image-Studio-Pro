@@ -4,6 +4,7 @@ import { $, optional$ } from '../dom.js';
 import { fitImage, renderAll } from '../canvas.js';
 import { pushHistory } from '../history.js';
 import { toast } from '../ui.js';
+import { canvasFromImage, loadImageFromCanvas } from '../utils.js';
 import { removeBackground } from '@imgly/background-removal';
 
 const MODEL_LABELS = {
@@ -170,9 +171,7 @@ async function runAIBG() {
   toast('Processing with AI...');
 
   try {
-    const tmp = document.createElement('canvas');
-    tmp.width = S.img.width; tmp.height = S.img.height;
-    tmp.getContext('2d').drawImage(S.img, 0, 0);
+    const tmp = canvasFromImage(S.img);
 
     const processed = S.bg.enhance ? enhanceEdges(tmp) : tmp;
 
@@ -203,16 +202,14 @@ async function runAIBG() {
   }
 }
 
-function refineEdges() {
+async function refineEdges() {
   const tol = S.bg.tol;
   const feather = S.bg.feather;
   const iw = S.img.width, ih = S.img.height;
   pushHistory('BG Refine');
 
-  const tmp = document.createElement('canvas');
-  tmp.width = iw; tmp.height = ih;
-  const tx = tmp.getContext('2d');
-  tx.drawImage(S.img, 0, 0);
+  const tmp = canvasFromImage(S.img!);
+  const tx = tmp.getContext('2d')!;
   const fullData = tx.getImageData(0, 0, iw, ih);
   const newPx = new Uint8ClampedArray(fullData.data);
 
@@ -250,12 +247,8 @@ function refineEdges() {
 
   tx.putImageData(new ImageData(newPx, iw, ih), 0, 0);
 
-  const nimg = new Image();
-  nimg.onload = () => {
-    S.img = nimg;
-    fitImage(); renderAll();
-    toast('Edges refined');
-    document.querySelector('.side-btn[data-tool="bgremove"]').click();
-  };
-  nimg.src = tmp.toDataURL('image/png');
+  S.img = await loadImageFromCanvas(tmp);
+  fitImage(); renderAll();
+  toast('Edges refined');
+  document.querySelector('.side-btn[data-tool="bgremove"]').click();
 }

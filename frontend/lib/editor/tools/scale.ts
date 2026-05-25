@@ -5,6 +5,7 @@ import { fitImage, renderAll } from '../canvas.js';
 import { pushHistory } from '../history.js';
 import { toast } from '../ui.js';
 import { smartResize } from '../lanczos.js';
+import { canvasFromImage, loadImageFromCanvas } from '../utils.js';
 
 const SCALE_PRESETS = [25, 50, 75, 150, 200, 400];
 
@@ -80,15 +81,12 @@ function renderLivePreview(w, h) {
   ctx.drawImage(tmp, 0, 0, mc.width, mc.height);
 }
 
-function applyScale(pct) {
+async function applyScale(pct) {
   pushHistory('Scale ' + pct + '%');
   const w = Math.round(S.img.width * pct / 100);
   const h = Math.round(S.img.height * pct / 100);
 
-  const src = document.createElement('canvas');
-  src.width = S.img.width;
-  src.height = S.img.height;
-  src.getContext('2d').drawImage(S.img, 0, 0);
+  const src = canvasFromImage(S.img!);
 
   const result = pct < 100 ? smartResize(src, w, h) : (() => {
     const c = document.createElement('canvas');
@@ -97,11 +95,7 @@ function applyScale(pct) {
     return c;
   })();
 
-  const nimg = new Image();
-  nimg.onload = () => {
-    S.img = nimg;
-    fitImage(); renderAll();
-    toast('Scaled to ' + w + 'x' + h);
-  };
-  nimg.src = result.toDataURL('image/png');
+  S.img = await loadImageFromCanvas(result);
+  fitImage(); renderAll();
+  toast('Scaled to ' + w + 'x' + h);
 }

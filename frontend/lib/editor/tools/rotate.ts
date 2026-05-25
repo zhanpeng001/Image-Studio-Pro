@@ -4,6 +4,7 @@ import { $ } from '../dom.js';
 import { fitImage, renderAll, renderRotatePreview } from '../canvas.js';
 import { pushHistory } from '../history.js';
 import { toast } from '../ui.js';
+import { triggerDownload } from '../utils.js';
 import JSZip from 'jszip';
 
 const COMMON_ANGLES = [-180, -90, -45, 0, 45, 90, 180];
@@ -267,12 +268,7 @@ async function downloadRotationSnapshots() {
   });
 
   const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = baseName + '_rotation_snapshots.zip';
-  a.click();
-  URL.revokeObjectURL(url);
+  triggerDownload(blob, baseName + '_rotation_snapshots.zip');
   toast('ZIP downloaded: ' + S.rotate.snapshots.length + ' snapshots');
 }
 

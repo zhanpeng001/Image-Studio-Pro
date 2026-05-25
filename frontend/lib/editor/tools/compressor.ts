@@ -2,6 +2,7 @@
 import { S } from '../state.js';
 import { $ } from '../dom.js';
 import { toast } from '../ui.js';
+import { canvasFromImage, triggerDownload } from '../utils.js';
 
 const QUALITY_PRESETS = [
   { label: 'Low', pct: 30 },
@@ -66,10 +67,7 @@ export function renderCompressorPanel(p) {
     const qual = +slider.value / 100;
     const mime = fmt === 'jpeg' ? 'image/jpeg' : 'image/webp';
 
-    const tmp = document.createElement('canvas');
-    tmp.width = S.img.width;
-    tmp.height = S.img.height;
-    tmp.getContext('2d').drawImage(S.img, 0, 0);
+    const tmp = canvasFromImage(S.img);
 
     const dataUrl = tmp.toDataURL('image/png');
     const origBytes = Math.round(dataUrl.length * 0.75); // base64 → bytes approx
@@ -97,12 +95,7 @@ export function renderCompressorPanel(p) {
     if (!lastBlob) return;
     const fmt = $('compFormat').value;
     const fname = S.fname.replace(/\.[^.]+$/, '') + (fmt === 'jpeg' ? '.jpg' : '.webp');
-    const url = URL.createObjectURL(lastBlob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fname;
-    a.click();
-    URL.revokeObjectURL(url);
+    triggerDownload(lastBlob, fname);
     toast('Downloaded: ' + fname);
   });
 }

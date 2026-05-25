@@ -3,6 +3,7 @@ import { S } from '../state.js';
 import { $, oc } from '../dom.js';
 import { drawGridOverlay } from '../overlay.js';
 import { toast } from '../ui.js';
+import { triggerDownload } from '../utils.js';
 import JSZip from 'jszip';
 
 export function renderGridPanel(p) {
@@ -122,10 +123,6 @@ async function downloadGridZip() {
   }
 
   const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = S.fname.replace('.png', '') + '_grid.zip';
-  a.click();
-  URL.revokeObjectURL(url);
+  triggerDownload(blob, S.fname.replace('.png', '') + '_grid.zip');
   toast('ZIP downloaded: ' + total + ' cells');
 }

@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { S } from './state.js';
 import { $, imageInfo, statusDim, statusZoom, saveModal } from './dom.js';
+import { triggerDownload } from './utils.js';
 
 // ==================== TOAST ====================
 export function toast(msg) {
@@ -114,21 +115,9 @@ export function setupSaveModal(signal) {
     const ext = fmt === 'jpeg' ? '.jpg' : '.' + fmt;
     const dlName = fname.replace(/\.[^.]+$/, '') + ext;
 
-    if (fmt === 'png') {
-      const link = document.createElement('a');
-      link.download = dlName;
-      link.href = tmp.toDataURL('image/png');
-      link.click();
-    } else {
-      tmp.toBlob(blob => {
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.download = dlName;
-        link.href = url;
-        link.click();
-        URL.revokeObjectURL(url);
-      }, mime, 0.92);
-    }
+    tmp.toBlob(blob => {
+      triggerDownload(blob, dlName);
+    }, mime, fmt === 'png' ? undefined : 0.92);
 
     saveModal.style.display = 'none';
     toast('Saved: ' + dlName);

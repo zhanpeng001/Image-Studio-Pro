@@ -3,12 +3,10 @@ import { S } from './state.js';
 import { fitImage, renderAll } from './canvas.js';
 import { drawCropOverlay, drawGridOverlay } from './overlay.js';
 import { updateStatus, toast } from './ui.js';
+import { canvasFromImage } from './utils.js';
 
 function snapshot(label) {
-  const tmp = document.createElement('canvas');
-  tmp.width = S.img.width;
-  tmp.height = S.img.height;
-  tmp.getContext('2d').drawImage(S.img, 0, 0);
+  const tmp = canvasFromImage(S.img);
   return {
     dataURL: tmp.toDataURL('image/png'),
     w: S.img.width,
