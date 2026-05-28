@@ -24,7 +24,7 @@ export function renderLayerToContext(
     const top = -height / 2 + padding;
 
     // Text background fill
-    if (layer.textBgColor !== 'transparent' && layer.text) {
+    if (layer.textBgColor !== 'transparent') {
       ctx.save();
       ctx.fillStyle = layer.textBgColor;
       const bgPad = padding;
