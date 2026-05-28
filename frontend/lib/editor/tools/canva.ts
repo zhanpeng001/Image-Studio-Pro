@@ -147,10 +147,9 @@ export function renderCanvaPanel(p: HTMLElement) {
   const addIconBtn = document.getElementById('canvaAddIcon');
   if (addIconBtn) {
     addIconBtn.onclick = () => {
+      // Scroll the picker into view
       const picker = document.getElementById('canvaIconPicker');
-      if (!picker) return;
-      const showing = picker.style.display === 'grid';
-      picker.style.display = showing ? 'none' : 'grid';
+      if (picker) picker.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     };
   }
 
@@ -162,7 +161,6 @@ export function renderCanvaPanel(p: HTMLElement) {
         e.stopPropagation();
         const iconName = (btn as HTMLElement).dataset.icon;
         if (iconName) addIconLayer(iconName);
-        iconPickerEl.style.display = 'none';
       });
     });
   }
@@ -221,12 +219,15 @@ export function renderCanvaPanel(p: HTMLElement) {
     fontSizeVal?.addEventListener('input', () => syncFontSize(+fontSizeVal.value || 24));
   }
 
-  const boldCheckbox = document.getElementById('canvaBold') as HTMLInputElement | null;
-  if (boldCheckbox && sel && sel.type === 'text') {
-    boldCheckbox.onchange = () => {
-      sel.bold = boldCheckbox.checked;
+  // Bold (toggle button)
+  const boldBtn = document.getElementById('canvaBold');
+  if (boldBtn && sel && sel.type === 'text') {
+    boldBtn.addEventListener('click', () => {
+      sel.bold = !sel.bold;
+      boldBtn.classList.toggle('active', sel.bold);
+      showTextOverlay();
       drawCanvaAll();
-    };
+    });
   }
 
   const fontColorInput = document.getElementById('canvaFontColor') as HTMLInputElement | null;
@@ -251,6 +252,147 @@ export function renderCanvaPanel(p: HTMLElement) {
       showTextOverlay();
       drawCanvaAll();
     });
+  }
+
+  // Font family
+  const fontFamilySelect = document.getElementById('canvaFontFamily') as HTMLSelectElement | null;
+  if (fontFamilySelect && sel && sel.type === 'text') {
+    fontFamilySelect.onchange = () => {
+      sel.fontFamily = fontFamilySelect.value;
+      showTextOverlay();
+      drawCanvaAll();
+    };
+  }
+
+  // Italic
+  const italicBtn = document.getElementById('canvaItalic');
+  if (italicBtn && sel && sel.type === 'text') {
+    italicBtn.addEventListener('click', () => {
+      sel.italic = !sel.italic;
+      italicBtn.classList.toggle('active', sel.italic);
+      showTextOverlay();
+      drawCanvaAll();
+    });
+  }
+
+  // Underline
+  const underlineBtn = document.getElementById('canvaUnderline');
+  if (underlineBtn && sel && sel.type === 'text') {
+    underlineBtn.addEventListener('click', () => {
+      sel.underline = !sel.underline;
+      underlineBtn.classList.toggle('active', sel.underline);
+      showTextOverlay();
+      drawCanvaAll();
+    });
+  }
+
+  // Strikethrough
+  const strikethroughBtn = document.getElementById('canvaStrikethrough');
+  if (strikethroughBtn && sel && sel.type === 'text') {
+    strikethroughBtn.addEventListener('click', () => {
+      sel.strikethrough = !sel.strikethrough;
+      strikethroughBtn.classList.toggle('active', sel.strikethrough);
+      showTextOverlay();
+      drawCanvaAll();
+    });
+  }
+
+  // Text background color
+  const textBgColorInput = document.getElementById('canvaTextBgColor') as HTMLInputElement | null;
+  const textBgEnabled = document.getElementById('canvaTextBgEnabled') as HTMLInputElement | null;
+  if (textBgColorInput && sel && sel.type === 'text') {
+    textBgColorInput.oninput = () => {
+      if (textBgEnabled?.checked) {
+        sel.textBgColor = textBgColorInput.value;
+      }
+      const hexEl = document.getElementById('canvaTextBgColorHex');
+      if (hexEl) hexEl.textContent = sel.textBgColor;
+      highlightPreset('canvaTextBgPresets', sel.textBgColor);
+      showTextOverlay();
+      drawCanvaAll();
+    };
+  }
+  if (textBgEnabled && sel && sel.type === 'text') {
+    textBgEnabled.onchange = () => {
+      sel.textBgColor = textBgEnabled.checked ? (textBgColorInput?.value || '#000000') : 'transparent';
+      const hexEl = document.getElementById('canvaTextBgColorHex');
+      if (hexEl) hexEl.textContent = sel.textBgColor;
+      highlightPreset('canvaTextBgPresets', sel.textBgColor === 'transparent' ? '#000000' : sel.textBgColor);
+      showTextOverlay();
+      drawCanvaAll();
+    };
+  }
+  if (sel && sel.type === 'text') {
+    wireColorPresets('canvaTextBgPresets', c => {
+      if (textBgEnabled) textBgEnabled.checked = true;
+      sel.textBgColor = c;
+      if (textBgColorInput) textBgColorInput.value = c;
+      const hexEl = document.getElementById('canvaTextBgColorHex');
+      if (hexEl) hexEl.textContent = c;
+      highlightPreset('canvaTextBgPresets', c);
+      showTextOverlay();
+      drawCanvaAll();
+    });
+  }
+
+  // Text shadow
+  const textShadowChk = document.getElementById('canvaTextShadow') as HTMLInputElement | null;
+  const textShadowColor = document.getElementById('canvaTextShadowColor') as HTMLInputElement | null;
+  const textShadowBlur = document.getElementById('canvaTextShadowBlur') as HTMLInputElement | null;
+  const textShadowBlurVal = document.getElementById('canvaTextShadowBlurVal');
+  if (textShadowChk && sel && sel.type === 'text') {
+    textShadowChk.onchange = () => {
+      sel.textShadow = textShadowChk.checked;
+      const opts = document.getElementById('canvaTextShadowOpts');
+      if (opts) opts.style.display = sel.textShadow ? 'flex' : 'none';
+      showTextOverlay();
+      drawCanvaAll();
+    };
+  }
+  if (textShadowColor && sel && sel.type === 'text') {
+    textShadowColor.oninput = () => {
+      sel.textShadowColor = textShadowColor.value;
+      showTextOverlay();
+      drawCanvaAll();
+    };
+  }
+  if (textShadowBlur && sel && sel.type === 'text') {
+    textShadowBlur.oninput = () => {
+      sel.textShadowBlur = +textShadowBlur.value;
+      if (textShadowBlurVal) textShadowBlurVal.textContent = sel.textShadowBlur + 'px';
+      showTextOverlay();
+      drawCanvaAll();
+    };
+  }
+
+  // Text outline
+  const textOutlineChk = document.getElementById('canvaTextOutline') as HTMLInputElement | null;
+  const textOutlineColor = document.getElementById('canvaTextOutlineColor') as HTMLInputElement | null;
+  const textOutlineWidth = document.getElementById('canvaTextOutlineWidth') as HTMLInputElement | null;
+  const textOutlineWidthVal = document.getElementById('canvaTextOutlineWidthVal');
+  if (textOutlineChk && sel && sel.type === 'text') {
+    textOutlineChk.onchange = () => {
+      sel.textOutline = textOutlineChk.checked;
+      const opts = document.getElementById('canvaTextOutlineOpts');
+      if (opts) opts.style.display = sel.textOutline ? 'flex' : 'none';
+      showTextOverlay();
+      drawCanvaAll();
+    };
+  }
+  if (textOutlineColor && sel && sel.type === 'text') {
+    textOutlineColor.oninput = () => {
+      sel.textOutlineColor = textOutlineColor.value;
+      showTextOverlay();
+      drawCanvaAll();
+    };
+  }
+  if (textOutlineWidth && sel && sel.type === 'text') {
+    textOutlineWidth.oninput = () => {
+      sel.textOutlineWidth = +textOutlineWidth.value;
+      if (textOutlineWidthVal) textOutlineWidthVal.textContent = sel.textOutlineWidth + 'px';
+      showTextOverlay();
+      drawCanvaAll();
+    };
   }
 
   const removeBtn = document.getElementById('canvaRemoveLayer');
@@ -453,10 +595,28 @@ function showTextOverlay() {
   overlay.style.height = rect.height + 'px';
   overlay.style.fontSize = (sel.fontSize * zoom) + 'px';
   overlay.style.color = sel.fontColor;
+  overlay.style.fontFamily = sel.fontFamily || 'sans-serif';
   overlay.style.fontWeight = sel.bold ? 'bold' : 'normal';
+  overlay.style.fontStyle = sel.italic ? 'italic' : 'normal';
+  overlay.style.textDecoration = sel.underline ? 'underline' : (sel.strikethrough ? 'line-through' : 'none');
   overlay.style.opacity = String(sel.opacity);
   overlay.style.padding = (4 * zoom) + 'px';
   overlay.style.outlineWidth = (2 * zoom) + 'px';
+  overlay.style.backgroundColor = sel.textBgColor === 'transparent' ? 'transparent' : (sel.textBgColor || 'transparent');
+
+  // Text shadow
+  if (sel.textShadow) {
+    overlay.style.textShadow = `0 0 ${(sel.textShadowBlur || 0) * zoom}px ${sel.textShadowColor || '#000000'}`;
+  } else {
+    overlay.style.textShadow = 'none';
+  }
+
+  // Text outline (using -webkit-text-stroke for editable overlay)
+  if (sel.textOutline) {
+    overlay.style.webkitTextStroke = `${(sel.textOutlineWidth || 2) * zoom}px ${sel.textOutlineColor || '#000000'}`;
+  } else {
+    overlay.style.webkitTextStroke = 'none';
+  }
 
   if (sel.angle !== 0) {
     overlay.style.transformOrigin = 'center center';
