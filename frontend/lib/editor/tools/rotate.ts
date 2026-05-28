@@ -283,19 +283,22 @@ async function downloadRotationSnapshots() {
   }
 
   showLoading('Building ZIP with ' + S.rotate.snapshots.length + ' snapshots...');
-  const zip = new JSZip();
-  const baseName = S.fname.replace(/\.[^.]+$/, '') || 'image';
+  try {
+    const zip = new JSZip();
+    const baseName = S.fname.replace(/\.[^.]+$/, '') || 'image';
 
-  S.rotate.snapshots.forEach((snap, idx) => {
-    const angle = formatAngle(snap.angle).replace('-', 'neg').replace('.', 'p');
-    const b64 = snap.dataURL.split(',')[1];
-    zip.file(baseName + '_rotate_' + String(idx + 1).padStart(2, '0') + '_' + angle + 'deg.png', b64, { base64: true });
-  });
+    S.rotate.snapshots.forEach((snap, idx) => {
+      const angle = formatAngle(snap.angle).replace('-', 'neg').replace('.', 'p');
+      const b64 = snap.dataURL.split(',')[1];
+      zip.file(baseName + '_rotate_' + String(idx + 1).padStart(2, '0') + '_' + angle + 'deg.png', b64, { base64: true });
+    });
 
-  const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
-  triggerDownload(blob, baseName + '_rotation_snapshots.zip');
-  hideLoading();
-  toast('ZIP downloaded: ' + S.rotate.snapshots.length + ' snapshots');
+    const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+    triggerDownload(blob, baseName + '_rotation_snapshots.zip');
+    toast('ZIP downloaded: ' + S.rotate.snapshots.length + ' snapshots');
+  } finally {
+    hideLoading();
+  }
 }
 
 export function applyRotationFromKeyboard() {

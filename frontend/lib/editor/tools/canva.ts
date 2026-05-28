@@ -1152,14 +1152,17 @@ async function mergeAllLayers() {
   S.img = nimg;
   c.layers = [];
   c.selectedIdx = -1;
-  c.zoom = 1;
   c.workspaceW = 0;
   c.workspaceH = 0;
+  c.dragging = false;
+  c.moving = false;
+  c.panning = false;
+  c.dragCorner = null;
 
   hideLoading();
-  toast('Merged layers');
+  toast('All layers merged');
 
-  // Switch to crop tool and render normally
-  const cropBtn = document.querySelector('.side-btn[data-tool="crop"]') as HTMLElement | null;
-  if (cropBtn) cropBtn.click();
+  // Re-render the canva panel (workspace remains open)
+  const panel = document.getElementById('panel');
+  if (panel) renderCanvaPanel(panel);
 }

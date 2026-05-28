@@ -103,26 +103,29 @@ async function downloadGridZip() {
   const total = g.rows * g.cols;
 
   showLoading('Building ZIP with ' + total + ' cells...');
-  const zip = new JSZip();
+  try {
+    const zip = new JSZip();
 
-  for (let r = 0; r < g.rows; r++) {
-    for (let c = 0; c < g.cols; c++) {
-      const sx = Math.round(ve[c] * iw);
-      const sy = Math.round(he[r] * ih);
-      const sw = Math.round((ve[c + 1] - ve[c]) * iw);
-      const sh = Math.round((he[r + 1] - he[r]) * ih);
-      if (sw <= 0 || sh <= 0) continue;
+    for (let r = 0; r < g.rows; r++) {
+      for (let c = 0; c < g.cols; c++) {
+        const sx = Math.round(ve[c] * iw);
+        const sy = Math.round(he[r] * ih);
+        const sw = Math.round((ve[c + 1] - ve[c]) * iw);
+        const sh = Math.round((he[r + 1] - he[r]) * ih);
+        if (sw <= 0 || sh <= 0) continue;
 
-      const cell = document.createElement('canvas');
-      cell.width = sw; cell.height = sh;
-      cell.getContext('2d')!.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
-      const b64 = cell.toDataURL('image/png').split(',')[1];
-      zip.file('cell_r' + (r + 1) + '_c' + (c + 1) + '.png', b64, { base64: true });
+        const cell = document.createElement('canvas');
+        cell.width = sw; cell.height = sh;
+        cell.getContext('2d')!.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+        const b64 = cell.toDataURL('image/png').split(',')[1];
+        zip.file('cell_r' + (r + 1) + '_c' + (c + 1) + '.png', b64, { base64: true });
+      }
     }
-  }
 
-  const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
-  triggerDownload(blob, S.fname.replace('.png', '') + '_grid.zip');
-  hideLoading();
-  toast('ZIP downloaded: ' + total + ' cells');
+    const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+    triggerDownload(blob, S.fname.replace('.png', '') + '_grid.zip');
+    toast('ZIP downloaded: ' + total + ' cells');
+  } finally {
+    hideLoading();
+  }
 }
