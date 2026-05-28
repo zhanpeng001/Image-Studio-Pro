@@ -3,15 +3,15 @@ import type { CanvaLayer } from '../state.js';
 import { toast } from '../ui.js';
 
 export function createLayer(img: HTMLImageElement | null, x: number, y: number, w: number, h: number): CanvaLayer {
-  return { img, x, y, w, h, angle: 0, opacity: 1, ratioLocked: false, ratio: w / h, type: 'image', text: '', fontSize: 24, fontColor: '#ffffff', bold: false, iconName: '', iconColor: '#ffffff' };
+  return { img, x, y, w, h, angle: 0, opacity: 1, ratioLocked: false, ratio: w / h, type: 'image', text: '', fontSize: 24, fontColor: '#ffffff', bold: false, italic: false, underline: false, strikethrough: false, fontFamily: 'sans-serif', textShadow: false, textShadowColor: '#000000', textShadowBlur: 4, textOutline: false, textOutlineColor: '#000000', textOutlineWidth: 2, textBgColor: 'transparent', iconName: '', iconColor: '#ffffff' };
 }
 
 export function createTextLayer(x: number, y: number, w: number, h: number): CanvaLayer {
-  return { img: null, x, y, w, h, angle: 0, opacity: 1, ratioLocked: false, ratio: w / h, type: 'text', text: '', fontSize: 24, fontColor: '#ffffff', bold: false, iconName: '', iconColor: '#ffffff' };
+  return { img: null, x, y, w, h, angle: 0, opacity: 1, ratioLocked: false, ratio: w / h, type: 'text', text: '', fontSize: 24, fontColor: '#ffffff', bold: false, italic: false, underline: false, strikethrough: false, fontFamily: 'sans-serif', textShadow: false, textShadowColor: '#000000', textShadowBlur: 4, textOutline: false, textOutlineColor: '#000000', textOutlineWidth: 2, textBgColor: 'transparent', iconName: '', iconColor: '#ffffff' };
 }
 
 export function createIconLayer(x: number, y: number, w: number, h: number, iconName: string): CanvaLayer {
-  return { img: null, x, y, w, h, angle: 0, opacity: 1, ratioLocked: false, ratio: w / h, type: 'icon', text: '', fontSize: 24, fontColor: '#ffffff', bold: false, iconName, iconColor: '#ffffff' };
+  return { img: null, x, y, w, h, angle: 0, opacity: 1, ratioLocked: false, ratio: w / h, type: 'icon', text: '', fontSize: 24, fontColor: '#ffffff', bold: false, italic: false, underline: false, strikethrough: false, fontFamily: 'sans-serif', textShadow: false, textShadowColor: '#000000', textShadowBlur: 4, textOutline: false, textOutlineColor: '#000000', textOutlineWidth: 2, textBgColor: 'transparent', iconName, iconColor: '#ffffff' };
 }
 
 export function loadOverlayLayer(file: File, afterLoad: () => void): void {

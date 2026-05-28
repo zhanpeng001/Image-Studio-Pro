@@ -60,6 +60,17 @@ export interface CanvaLayer {
   fontSize: number;
   fontColor: string;
   bold: boolean;
+  italic: boolean;
+  underline: boolean;
+  strikethrough: boolean;
+  fontFamily: string;
+  textShadow: boolean;
+  textShadowColor: string;
+  textShadowBlur: number;
+  textOutline: boolean;
+  textOutlineColor: string;
+  textOutlineWidth: number;
+  textBgColor: string;
   iconName: string;
   iconColor: string;
 }
