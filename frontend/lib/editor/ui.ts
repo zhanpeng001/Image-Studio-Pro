@@ -143,12 +143,21 @@ export function showLoading(message: string) {
   overlay.className = 'loading-overlay';
   overlay.setAttribute('role', 'status');
   overlay.setAttribute('aria-live', 'polite');
-  overlay.innerHTML = `
-    <div class="loading-box">
-      <div class="spinner"></div>
-      <span class="loading-text">${message}</span>
-    </div>
-  `;
+
+  const box = document.createElement('div');
+  box.className = 'loading-box';
+
+  const spinner = document.createElement('div');
+  spinner.className = 'spinner';
+  spinner.setAttribute('aria-hidden', 'true');
+
+  const text = document.createElement('span');
+  text.className = 'loading-text';
+  text.textContent = message;
+
+  box.appendChild(spinner);
+  box.appendChild(text);
+  overlay.appendChild(box);
   document.body.appendChild(overlay);
   loadingOverlay = overlay;
 }
