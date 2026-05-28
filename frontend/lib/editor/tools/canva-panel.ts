@@ -20,7 +20,7 @@ export function buildCanvaPanelHTML(c: CanvaState, sel: CanvaLayer | null): stri
   html += '<div class="canva-section">';
   html += '<div class="canva-section-title">Zoom & Navigation</div>';
   html += '<div class="row" style="align-items:center;gap:6px;">';
-  html += '<input type="range" id="canvaZoom" min="25" max="400" value="' + Math.round(c.zoom * 100) + '" style="flex:1;">';
+  html += '<input type="range" id="canvaZoom" min="25" max="400" value="' + Math.round(c.zoom * 100) + '" title="Zoom level" style="flex:1;">';
   html += '<span class="val" id="canvaZoomVal" style="min-width:42px;text-align:center;">' + Math.round(c.zoom * 100) + '%</span>';
   html += '<button class="btn" id="canvaZoomFit" title="Fit to screen" style="padding:4px 6px;font-size:11px;">Fit</button>';
   html += '</div>';
@@ -56,12 +56,12 @@ export function buildCanvaPanelHTML(c: CanvaState, sel: CanvaLayer | null): stri
     html += '<div class="canva-section-title">Transform</div>';
 
     html += '<div class="col"><label>Opacity: <span class="val" id="canvaOpacityVal">' + Math.round(sel.opacity * 100) + '%</span></label>';
-    html += '<input type="range" id="canvaOpacity" min="5" max="100" value="' + Math.round(sel.opacity * 100) + '"></div>';
+    html += '<input type="range" id="canvaOpacity" min="5" max="100" value="' + Math.round(sel.opacity * 100) + '" title="Layer opacity"></div>';
 
     html += '<div class="col"><label>Rotation: <span class="val" id="canvaAngleVal">' + sel.angle + '°</span></label>';
-    html += '<input type="range" id="canvaAngle" min="-180" max="180" value="' + sel.angle + '"></div>';
+    html += '<input type="range" id="canvaAngle" min="-180" max="180" value="' + sel.angle + '" title="Layer rotation"></div>';
 
-    html += '<label><input type="checkbox" id="canvaLockRatio"' + (sel.ratioLocked ? ' checked' : '') + '> Lock aspect ratio</label>';
+    html += '<label title="Lock width/height ratio"><input type="checkbox" id="canvaLockRatio"' + (sel.ratioLocked ? ' checked' : '') + '> Lock aspect ratio</label>';
     html += '</div>';
   }
 
@@ -72,7 +72,7 @@ export function buildCanvaPanelHTML(c: CanvaState, sel: CanvaLayer | null): stri
     html += '<div class="canva-section-title">Text Formatting</div>';
 
     // Font family
-    html += '<div class="col"><label>Font Family</label><select id="canvaFontFamily">';
+    html += '<div class="col"><label>Font Family</label><select id="canvaFontFamily" title="Font family">';
     for (const opt of FONT_OPTIONS) {
       html += `<option value="${opt.value}"${sel.fontFamily === opt.value ? ' selected' : ''}>${opt.label}</option>`;
     }
@@ -80,9 +80,9 @@ export function buildCanvaPanelHTML(c: CanvaState, sel: CanvaLayer | null): stri
 
     // Font size
     html += '<div class="col"><label>Font Size</label><div class="expand-row">';
-    html += '<span class="expand-btn" id="canvaFontSizeMinus">−</span>';
-    html += '<input type="number" class="expand-input" id="canvaFontSizeVal" value="' + sel.fontSize + '" min="8" max="512" style="width:52px;text-align:center;">';
-    html += '<span class="expand-btn" id="canvaFontSizePlus">+</span></div></div>';
+    html += '<span class="expand-btn" id="canvaFontSizeMinus" title="Decrease font size">−</span>';
+    html += '<input type="number" class="expand-input" id="canvaFontSizeVal" value="' + sel.fontSize + '" min="8" max="512" title="Font size" style="width:52px;text-align:center;">';
+    html += '<span class="expand-btn" id="canvaFontSizePlus" title="Increase font size">+</span></div></div>';
 
     // Formatting buttons
     html += '<div class="col"><label>Style</label><div class="format-row">';
@@ -94,32 +94,32 @@ export function buildCanvaPanelHTML(c: CanvaState, sel: CanvaLayer | null): stri
 
     // Font color
     html += '<div class="col"><label>Font Color</label><div class="row" style="align-items:center;gap:8px;">';
-    html += '<input type="color" id="canvaFontColor" value="' + sel.fontColor + '" style="width:28px;height:28px;border:none;border-radius:4px;cursor:pointer;padding:0;">';
+    html += '<input type="color" id="canvaFontColor" value="' + sel.fontColor + '" title="Font color" style="width:28px;height:28px;border:none;border-radius:4px;cursor:pointer;padding:0;">';
     html += '<span id="canvaFontColorHex" style="font-size:12px;color:var(--text3);">' + sel.fontColor + '</span></div>';
     html += buildColorPresetsHTML('canvaFontPresets', sel.fontColor);
     html += '</div>';
 
     // Text background
     html += '<div class="col"><label>Text Background</label><div class="row" style="align-items:center;gap:8px;">';
-    html += '<input type="color" id="canvaTextBgColor" value="' + (sel.textBgColor === 'transparent' ? '#000000' : sel.textBgColor) + '" style="width:28px;height:28px;border:none;border-radius:4px;cursor:pointer;padding:0;">';
+    html += '<input type="color" id="canvaTextBgColor" value="' + (sel.textBgColor === 'transparent' ? '#000000' : sel.textBgColor) + '" title="Text background color" style="width:28px;height:28px;border:none;border-radius:4px;cursor:pointer;padding:0;">';
     html += '<span id="canvaTextBgColorHex" style="font-size:12px;color:var(--text3);">' + sel.textBgColor + '</span>';
-    html += '<label><input type="checkbox" id="canvaTextBgEnabled"' + (sel.textBgColor !== 'transparent' ? ' checked' : '') + '> Enable</label></div>';
+    html += '<label title="Enable text background"><input type="checkbox" id="canvaTextBgEnabled"' + (sel.textBgColor !== 'transparent' ? ' checked' : '') + '> Enable</label></div>';
     html += buildColorPresetsHTML('canvaTextBgPresets', sel.textBgColor === 'transparent' ? '#000000' : sel.textBgColor);
     html += '</div>';
 
     // Text shadow
-    html += '<div class="col"><div class="toggle-row"><label><input type="checkbox" id="canvaTextShadow"' + (sel.textShadow ? ' checked' : '') + '> Text Shadow</label></div>';
+    html += '<div class="col"><div class="toggle-row"><label title="Enable text shadow"><input type="checkbox" id="canvaTextShadow"' + (sel.textShadow ? ' checked' : '') + '> Text Shadow</label></div>';
     html += '<div id="canvaTextShadowOpts" style="display:' + (sel.textShadow ? 'flex' : 'none') + ';flex-direction:column;gap:6px;padding-left:20px;">';
-    html += '<div class="row" style="align-items:center;gap:8px;"><input type="color" id="canvaTextShadowColor" value="' + sel.textShadowColor + '" style="width:28px;height:28px;border:none;border-radius:4px;cursor:pointer;padding:0;">';
-    html += '<span style="font-size:12px;color:var(--text3);">Blur:</span><input type="range" id="canvaTextShadowBlur" min="0" max="20" value="' + sel.textShadowBlur + '" style="flex:1;">';
+    html += '<div class="row" style="align-items:center;gap:8px;"><input type="color" id="canvaTextShadowColor" value="' + sel.textShadowColor + '" title="Shadow color" style="width:28px;height:28px;border:none;border-radius:4px;cursor:pointer;padding:0;">';
+    html += '<span style="font-size:12px;color:var(--text3);">Blur:</span><input type="range" id="canvaTextShadowBlur" min="0" max="20" value="' + sel.textShadowBlur + '" title="Shadow blur radius" style="flex:1;">';
     html += '<span id="canvaTextShadowBlurVal" class="val" style="min-width:28px;">' + sel.textShadowBlur + 'px</span></div>';
     html += '</div></div>';
 
     // Text outline
-    html += '<div class="col"><div class="toggle-row"><label><input type="checkbox" id="canvaTextOutline"' + (sel.textOutline ? ' checked' : '') + '> Text Outline</label></div>';
+    html += '<div class="col"><div class="toggle-row"><label title="Enable text outline"><input type="checkbox" id="canvaTextOutline"' + (sel.textOutline ? ' checked' : '') + '> Text Outline</label></div>';
     html += '<div id="canvaTextOutlineOpts" style="display:' + (sel.textOutline ? 'flex' : 'none') + ';flex-direction:column;gap:6px;padding-left:20px;">';
-    html += '<div class="row" style="align-items:center;gap:8px;"><input type="color" id="canvaTextOutlineColor" value="' + sel.textOutlineColor + '" style="width:28px;height:28px;border:none;border-radius:4px;cursor:pointer;padding:0;">';
-    html += '<span style="font-size:12px;color:var(--text3);">Width:</span><input type="range" id="canvaTextOutlineWidth" min="1" max="10" value="' + sel.textOutlineWidth + '" style="flex:1;">';
+    html += '<div class="row" style="align-items:center;gap:8px;"><input type="color" id="canvaTextOutlineColor" value="' + sel.textOutlineColor + '" title="Outline color" style="width:28px;height:28px;border:none;border-radius:4px;cursor:pointer;padding:0;">';
+    html += '<span style="font-size:12px;color:var(--text3);">Width:</span><input type="range" id="canvaTextOutlineWidth" min="1" max="10" value="' + sel.textOutlineWidth + '" title="Outline width" style="flex:1;">';
     html += '<span id="canvaTextOutlineWidthVal" class="val" style="min-width:28px;">' + sel.textOutlineWidth + 'px</span></div>';
     html += '</div></div>';
 
@@ -132,11 +132,11 @@ export function buildCanvaPanelHTML(c: CanvaState, sel: CanvaLayer | null): stri
     html += '<div class="canva-section" id="canvaIconControls">';
     html += '<div class="canva-section-title">Icon</div>';
     html += '<div class="col"><label>Icon</label><span id="canvaIconName" style="font-size:13px;color:var(--text);padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);display:inline-block;">' + sel.iconName + '</span></div>';
-    html += '<div class="col"><label>Size</label><div class="expand-row"><span class="expand-btn" id="canvaIconSizeMinus">−</span>';
-    html += '<input type="number" class="expand-input" id="canvaIconSizeVal" value="' + Math.round(Math.min(sel.w, sel.h)) + '" min="16" max="2048" style="width:52px;text-align:center;">';
-    html += '<span class="expand-btn" id="canvaIconSizePlus">+</span></div></div>';
+    html += '<div class="col"><label>Size</label><div class="expand-row"><span class="expand-btn" id="canvaIconSizeMinus" title="Decrease icon size">−</span>';
+    html += '<input type="number" class="expand-input" id="canvaIconSizeVal" value="' + Math.round(Math.min(sel.w, sel.h)) + '" min="16" max="2048" title="Icon size" style="width:52px;text-align:center;">';
+    html += '<span class="expand-btn" id="canvaIconSizePlus" title="Increase icon size">+</span></div></div>';
     html += '<div class="col"><label>Icon Color</label><div class="row" style="align-items:center;gap:8px;">';
-    html += '<input type="color" id="canvaIconColor" value="' + (sel.iconColor || '#ffffff') + '" style="width:28px;height:28px;border:none;border-radius:4px;cursor:pointer;padding:0;">';
+    html += '<input type="color" id="canvaIconColor" value="' + (sel.iconColor || '#ffffff') + '" title="Icon color" style="width:28px;height:28px;border:none;border-radius:4px;cursor:pointer;padding:0;">';
     html += '<span id="canvaIconColorHex" style="font-size:12px;color:var(--text3);">' + (sel.iconColor || '#ffffff') + '</span></div>';
     html += buildColorPresetsHTML('canvaIconPresets', sel.iconColor || '#ffffff');
     html += '</div>';
@@ -159,7 +159,7 @@ export function buildCanvaPanelHTML(c: CanvaState, sel: CanvaLayer | null): stri
       ? ' fill="currentColor"'
       : ' fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
     html += '<button class="canva-icon-btn" data-icon="' + iconName + '" title="' + iconName + '">';
-    html += '<svg width="18" height="18" viewBox="0 0 24 24"' + iconPaint + '><path d="' + iconDef.path.replace(/"/g, '&quot;') + '"/"></svg>';
+    html += '<svg width="18" height="18" viewBox="0 0 24 24"' + iconPaint + '><path d="' + iconDef.path.replace(/"/g, '&quot;') + '"/></svg>';
     html += '</button>';
   }
   html += '</div>';
