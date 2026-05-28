@@ -14,9 +14,10 @@ export function renderLayerToContext(
 
   if (layer.type === 'text') {
     const fontStyle = (layer.italic ? 'italic ' : '') + (layer.bold ? 'bold ' : '');
-    ctx.font = fontStyle + (layer.fontSize * scale) + 'px ' + layer.fontFamily;
+    ctx.font = fontStyle + (layer.fontSize * scale) + 'px ' + (layer.fontFamily || 'sans-serif');
     ctx.fillStyle = layer.fontColor;
     ctx.textBaseline = 'top';
+    ctx.textAlign = 'start';
     const padding = 4 * scale;
     const lines = layoutCanvaText(layer.text || '', width - padding * 2, (value: string) => ctx.measureText(value).width);
     const lineHeight = layer.fontSize * scale * 1.3;
@@ -24,7 +25,7 @@ export function renderLayerToContext(
     const top = -height / 2 + padding;
 
     // Text background fill
-    if (layer.textBgColor !== 'transparent') {
+    if ((layer.textBgColor || 'transparent') !== 'transparent') {
       ctx.save();
       ctx.fillStyle = layer.textBgColor;
       const bgPad = padding;
@@ -45,7 +46,7 @@ export function renderLayerToContext(
       if (layer.textShadow) {
         ctx.save();
         ctx.shadowColor = layer.textShadowColor;
-        ctx.shadowBlur = layer.textShadowBlur * scale;
+        ctx.shadowBlur = (layer.textShadowBlur || 0) * scale;
         ctx.shadowOffsetX = 0;
         ctx.shadowOffsetY = 0;
         ctx.fillText(lineText, left, lineY);
