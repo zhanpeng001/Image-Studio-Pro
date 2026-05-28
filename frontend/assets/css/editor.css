@@ -1210,17 +1210,6 @@ body {
   color: var(--text);
 }
 
-/* Canva icon picker */
-#canvaIconPicker {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 4px;
-  padding: 6px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  margin-bottom: 4px;
-}
 
 .canva-icon-btn {
   aspect-ratio: 1;

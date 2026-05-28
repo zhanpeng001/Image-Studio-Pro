@@ -13,6 +13,11 @@ const FONT_OPTIONS = [
   { value: 'cursive', label: 'Cursive' },
 ];
 
+function sanitizeColor(c: string | undefined, fallback = '#000000'): string {
+  if (!c || c === 'transparent') return c || fallback;
+  return /^#[0-9a-fA-F]{6}$/.test(c) ? c : fallback;
+}
+
 export function buildCanvaPanelHTML(c: CanvaState, sel: CanvaLayer | null): string {
   let html = '';
 
@@ -94,23 +99,23 @@ export function buildCanvaPanelHTML(c: CanvaState, sel: CanvaLayer | null): stri
 
     // Font color
     html += '<div class="col"><label>Font Color</label><div class="row" style="align-items:center;gap:8px;">';
-    html += '<input type="color" id="canvaFontColor" value="' + sel.fontColor + '" title="Font color" style="width:28px;height:28px;border:none;border-radius:4px;cursor:pointer;padding:0;">';
-    html += '<span id="canvaFontColorHex" style="font-size:12px;color:var(--text3);">' + sel.fontColor + '</span></div>';
-    html += buildColorPresetsHTML('canvaFontPresets', sel.fontColor);
+    html += '<input type="color" id="canvaFontColor" value="' + sanitizeColor(sel.fontColor, '#ffffff') + '" title="Font color" style="width:28px;height:28px;border:none;border-radius:4px;cursor:pointer;padding:0;">';
+    html += '<span id="canvaFontColorHex" style="font-size:12px;color:var(--text3);">' + sanitizeColor(sel.fontColor, '#ffffff') + '</span></div>';
+    html += buildColorPresetsHTML('canvaFontPresets', sanitizeColor(sel.fontColor, '#ffffff'));
     html += '</div>';
 
     // Text background
     html += '<div class="col"><label>Text Background</label><div class="row" style="align-items:center;gap:8px;">';
-    html += '<input type="color" id="canvaTextBgColor" value="' + (sel.textBgColor === 'transparent' ? '#000000' : sel.textBgColor) + '" title="Text background color" style="width:28px;height:28px;border:none;border-radius:4px;cursor:pointer;padding:0;">';
+    html += '<input type="color" id="canvaTextBgColor" value="' + (sel.textBgColor === 'transparent' ? '#000000' : sanitizeColor(sel.textBgColor)) + '" title="Text background color" style="width:28px;height:28px;border:none;border-radius:4px;cursor:pointer;padding:0;">';
     html += '<span id="canvaTextBgColorHex" style="font-size:12px;color:var(--text3);">' + sel.textBgColor + '</span>';
     html += '<label title="Enable text background"><input type="checkbox" id="canvaTextBgEnabled"' + (sel.textBgColor !== 'transparent' ? ' checked' : '') + '> Enable</label></div>';
-    html += buildColorPresetsHTML('canvaTextBgPresets', sel.textBgColor === 'transparent' ? '#000000' : sel.textBgColor);
+    html += buildColorPresetsHTML('canvaTextBgPresets', sel.textBgColor === 'transparent' ? '#000000' : sanitizeColor(sel.textBgColor));
     html += '</div>';
 
     // Text shadow
     html += '<div class="col"><div class="toggle-row"><label title="Enable text shadow"><input type="checkbox" id="canvaTextShadow"' + (sel.textShadow ? ' checked' : '') + '> Text Shadow</label></div>';
     html += '<div id="canvaTextShadowOpts" style="display:' + (sel.textShadow ? 'flex' : 'none') + ';flex-direction:column;gap:6px;padding-left:20px;">';
-    html += '<div class="row" style="align-items:center;gap:8px;"><input type="color" id="canvaTextShadowColor" value="' + sel.textShadowColor + '" title="Shadow color" style="width:28px;height:28px;border:none;border-radius:4px;cursor:pointer;padding:0;">';
+    html += '<div class="row" style="align-items:center;gap:8px;"><input type="color" id="canvaTextShadowColor" value="' + sanitizeColor(sel.textShadowColor) + '" title="Shadow color" style="width:28px;height:28px;border:none;border-radius:4px;cursor:pointer;padding:0;">';
     html += '<span style="font-size:12px;color:var(--text3);">Blur:</span><input type="range" id="canvaTextShadowBlur" min="0" max="20" value="' + sel.textShadowBlur + '" title="Shadow blur radius" style="flex:1;">';
     html += '<span id="canvaTextShadowBlurVal" class="val" style="min-width:28px;">' + sel.textShadowBlur + 'px</span></div>';
     html += '</div></div>';
@@ -118,7 +123,7 @@ export function buildCanvaPanelHTML(c: CanvaState, sel: CanvaLayer | null): stri
     // Text outline
     html += '<div class="col"><div class="toggle-row"><label title="Enable text outline"><input type="checkbox" id="canvaTextOutline"' + (sel.textOutline ? ' checked' : '') + '> Text Outline</label></div>';
     html += '<div id="canvaTextOutlineOpts" style="display:' + (sel.textOutline ? 'flex' : 'none') + ';flex-direction:column;gap:6px;padding-left:20px;">';
-    html += '<div class="row" style="align-items:center;gap:8px;"><input type="color" id="canvaTextOutlineColor" value="' + sel.textOutlineColor + '" title="Outline color" style="width:28px;height:28px;border:none;border-radius:4px;cursor:pointer;padding:0;">';
+    html += '<div class="row" style="align-items:center;gap:8px;"><input type="color" id="canvaTextOutlineColor" value="' + sanitizeColor(sel.textOutlineColor) + '" title="Outline color" style="width:28px;height:28px;border:none;border-radius:4px;cursor:pointer;padding:0;">';
     html += '<span style="font-size:12px;color:var(--text3);">Width:</span><input type="range" id="canvaTextOutlineWidth" min="1" max="10" value="' + sel.textOutlineWidth + '" title="Outline width" style="flex:1;">';
     html += '<span id="canvaTextOutlineWidthVal" class="val" style="min-width:28px;">' + sel.textOutlineWidth + 'px</span></div>';
     html += '</div></div>';
@@ -136,9 +141,9 @@ export function buildCanvaPanelHTML(c: CanvaState, sel: CanvaLayer | null): stri
     html += '<input type="number" class="expand-input" id="canvaIconSizeVal" value="' + Math.round(Math.min(sel.w, sel.h)) + '" min="16" max="2048" title="Icon size" style="width:52px;text-align:center;">';
     html += '<span class="expand-btn" id="canvaIconSizePlus" title="Increase icon size">+</span></div></div>';
     html += '<div class="col"><label>Icon Color</label><div class="row" style="align-items:center;gap:8px;">';
-    html += '<input type="color" id="canvaIconColor" value="' + (sel.iconColor || '#ffffff') + '" title="Icon color" style="width:28px;height:28px;border:none;border-radius:4px;cursor:pointer;padding:0;">';
-    html += '<span id="canvaIconColorHex" style="font-size:12px;color:var(--text3);">' + (sel.iconColor || '#ffffff') + '</span></div>';
-    html += buildColorPresetsHTML('canvaIconPresets', sel.iconColor || '#ffffff');
+    html += '<input type="color" id="canvaIconColor" value="' + sanitizeColor(sel.iconColor, '#ffffff') + '" title="Icon color" style="width:28px;height:28px;border:none;border-radius:4px;cursor:pointer;padding:0;">';
+    html += '<span id="canvaIconColorHex" style="font-size:12px;color:var(--text3);">' + sanitizeColor(sel.iconColor, '#ffffff') + '</span></div>';
+    html += buildColorPresetsHTML('canvaIconPresets', sanitizeColor(sel.iconColor, '#ffffff'));
     html += '</div>';
   }
 
