@@ -1271,3 +1271,176 @@ body {
   color: var(--text2);
   font-weight: 500;
 }
+
+/* CANVA PANEL SECTIONS */
+.canva-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.canva-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text3);
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+/* Layer list improvements */
+.layer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.layer-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius);
+  background: var(--bg2);
+  cursor: pointer;
+  transition: background var(--transition);
+  border-left: 3px solid transparent;
+}
+
+.layer-row:hover {
+  background: var(--surface2);
+}
+
+.layer-row.active {
+  background: var(--accent-soft);
+  border-left-color: var(--accent);
+}
+
+.layer-badge {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.06);
+  color: var(--text3);
+  font-size: 9px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.layer-row.active .layer-badge {
+  background: var(--accent);
+  color: #071016;
+}
+
+.layer-name {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layer-row.active .layer-name {
+  color: var(--text);
+}
+
+.layer-meta {
+  font-size: 10px;
+  color: var(--text3);
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+/* Formatting row */
+.format-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.format-btn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text2);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all var(--transition);
+  font-family: inherit;
+}
+
+.format-btn:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.format-btn.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+/* Toggle row */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.toggle-row label {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text2);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+}
+
+/* Icon picker as persistent grid */
+#canvaIconPicker {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+  padding: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 4px;
+}
+
+.canva-icon-btn {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 4px;
+  transition: all var(--transition);
+  color: var(--text2);
+}
+
+.canva-icon-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
