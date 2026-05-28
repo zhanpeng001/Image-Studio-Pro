@@ -4,7 +4,7 @@ import { $, refreshDomBindings, mc, oc, ctx, panel, dropzone, canvasWrap, canvas
 import { fitImage, renderAll } from './canvas.js';
 import { undo, redo, updateUndoRedoButtons } from './history.js';
 import { clearOverlay, drawCropOverlay, drawGridOverlay } from './overlay.js';
-import { toast, updateStatus, setupKeys, setupShortcutsPanel, setupSaveModal, openSaveDialog } from './ui.js';
+import { toast, updateStatus, setupKeys, setupShortcutsPanel, setupSaveModal, openSaveDialog, toggleShortcutsPanel } from './ui.js';
 import { renderCropPanel, renderCropExpand, restoreCropCanvas, setupCropEvents, cleanupCropEvents, applyCropFromKeyboard, cancelCropEyedropper } from './tools/crop.js';
 import { renderScalePanel } from './tools/scale.js';
 import { renderGridPanel, setupGridEvents } from './tools/grid.js';
@@ -271,6 +271,8 @@ function setupTopbar(signal: AbortSignal) {
       renderAll();
     }
   }, { signal });
+  const btnHelp = document.getElementById('btnHelp');
+  if (btnHelp) btnHelp.addEventListener('click', toggleShortcutsPanel, { signal });
 }
 
 function handleToolKeys(e: KeyboardEvent) {

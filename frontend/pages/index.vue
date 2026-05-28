@@ -21,6 +21,9 @@
           <button class="tb-btn" id="btnFit" title="Fit to Screen"><span>Fit</span></button>
           <button class="tb-btn" id="btnActual" title="Actual Size"><span>1:1</span></button>
         </div>
+        <div class="command-group">
+          <button class="tb-btn" id="btnHelp" title="Keyboard Shortcuts (?)"><span class="tb-icon">?</span><span>Help</span></button>
+        </div>
       </div>
       <div class="topbar-right">
         <span class="image-info" id="imageInfo">No image</span>

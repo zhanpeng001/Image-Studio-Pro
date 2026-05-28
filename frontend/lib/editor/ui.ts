@@ -133,6 +133,11 @@ export function openSaveDialog() {
   saveModal.style.display = 'flex';
 }
 
+export function toggleShortcutsPanel() {
+  const ov = document.getElementById('shortcutsOverlay');
+  if (ov) ov.style.display = ov.style.display === 'flex' ? 'none' : 'flex';
+}
+
 // ==================== LOADING OVERLAY ====================
 let loadingOverlay: HTMLDivElement | null = null;
 
