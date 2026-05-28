@@ -42,14 +42,14 @@
       </nav>
 
       <main class="canvas-area" id="canvasArea">
-        <div class="dropzone" id="dropzone">
+        <div class="dropzone" id="dropzone" role="button" aria-label="Drop or browse for an image to open">
           <div class="dropzone-content">
             <div class="dropzone-badge">Drop or browse</div>
             <h2>Drop an image here</h2>
             <p>PNG, JPG, WEBP, GIF, and SVG files are supported.</p>
           </div>
         </div>
-        <div class="canvas-wrap" id="canvasWrap" style="display:none">
+        <div class="canvas-wrap" id="canvasWrap" style="display:none" aria-label="Image canvas">
           <canvas id="mainCanvas"></canvas>
           <canvas id="overlayCanvas"></canvas>
         </div>
@@ -76,16 +76,16 @@
     </div>
 
     <footer class="statusbar">
-      <span id="statusDim">-</span>
-      <span class="status-sep">|</span>
-      <span id="statusTool">Ready</span>
-      <span class="status-sep">|</span>
-      <span id="statusZoom">Fit</span>
+      <span id="statusDim" aria-live="polite">-</span>
+      <span class="status-sep" aria-hidden="true">|</span>
+      <span id="statusTool" aria-live="polite">Ready</span>
+      <span class="status-sep" aria-hidden="true">|</span>
+      <span id="statusZoom" aria-live="polite">Fit</span>
     </footer>
 
-    <div class="modal-overlay" id="saveModal" style="display:none">
+    <div class="modal-overlay" id="saveModal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="saveModalTitle">
       <div class="modal">
-        <h3>Save Image</h3>
+        <h3 id="saveModalTitle">Save Image</h3>
         <div class="col">
           <label>Filename</label>
           <input type="text" id="saveFilename" class="modal-input">
