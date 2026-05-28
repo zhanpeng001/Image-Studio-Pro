@@ -1425,22 +1425,3 @@ body {
   margin-bottom: 4px;
 }
 
-.canva-icon-btn {
-  aspect-ratio: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  cursor: pointer;
-  padding: 4px;
-  transition: all var(--transition);
-  color: var(--text2);
-}
-
-.canva-icon-btn:hover {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-  color: var(--accent);
-}
