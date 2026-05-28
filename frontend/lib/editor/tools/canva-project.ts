@@ -60,6 +60,17 @@ export function loadCanvaProject(file: File, hooks: CanvaProjectHooks): void {
         type: layer.type,
         text: layer.text || '', fontSize: layer.fontSize || 24,
         fontColor: layer.fontColor || '#ffffff', bold: layer.bold || false,
+        italic: layer.italic || false,
+        underline: layer.underline || false,
+        strikethrough: layer.strikethrough || false,
+        fontFamily: layer.fontFamily || 'sans-serif',
+        textShadow: layer.textShadow || false,
+        textShadowColor: layer.textShadowColor || '#000000',
+        textShadowBlur: layer.textShadowBlur ?? 4,
+        textOutline: layer.textOutline || false,
+        textOutlineColor: layer.textOutlineColor || '#000000',
+        textOutlineWidth: layer.textOutlineWidth ?? 2,
+        textBgColor: layer.textBgColor || 'transparent',
         iconName: layer.iconName || '', iconColor: layer.iconColor || '#ffffff'
       }));
       const imageLayers = project.layers.flatMap((layer, index) => layer.type === 'image' && layer.imgData ? [{ index, data: layer.imgData }] : []);
