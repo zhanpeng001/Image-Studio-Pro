@@ -29,13 +29,13 @@
 
     <div class="workspace">
       <nav class="sidebar">
-        <button class="side-btn active" data-tool="crop" title="Crop"><span class="tool-mark">CR</span><span>Crop</span></button>
-        <button class="side-btn" data-tool="resize" title="Scale"><span class="tool-mark">SC</span><span>Scale</span></button>
-        <button class="side-btn" data-tool="grid" title="Grid Split"><span class="tool-mark">GR</span><span>Grid</span></button>
-        <button class="side-btn" data-tool="bgremove" title="Background Removal"><span class="tool-mark">BG</span><span>Remove</span></button>
-        <button class="side-btn" data-tool="rotate" title="Rotate & Flip"><span class="tool-mark">RT</span><span>Rotate</span></button>
-        <button class="side-btn" data-tool="compressor" title="Compress"><span class="tool-mark">CP</span><span>Compress</span></button>
-        <button class="side-btn" data-tool="canva" title="Canva"><span class="tool-mark">CV</span><span>Canva</span></button>
+        <button class="side-btn active" data-tool="crop" title="Crop" aria-label="Crop tool"><svg class="tool-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg><span>Crop</span></button>
+        <button class="side-btn" data-tool="resize" title="Scale" aria-label="Scale tool"><svg class="tool-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/><path d="M9 21H3v-6"/></svg><span>Scale</span></button>
+        <button class="side-btn" data-tool="grid" title="Grid Split" aria-label="Grid Split tool"><svg class="tool-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></svg><span>Grid</span></button>
+        <button class="side-btn" data-tool="bgremove" title="Background Removal" aria-label="Background Removal tool"><svg class="tool-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/><path d="M12 8v8"/><path d="M8 12h8"/></svg><span>Remove</span></button>
+        <button class="side-btn" data-tool="rotate" title="Rotate & Flip" aria-label="Rotate & Flip tool"><svg class="tool-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9"/><polyline points="21 3 21 9 15 9"/></svg><span>Rotate</span></button>
+        <button class="side-btn" data-tool="compressor" title="Compress" aria-label="Compress tool"><svg class="tool-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg><span>Compress</span></button>
+        <button class="side-btn" data-tool="canva" title="Canva" aria-label="Canva tool"><svg class="tool-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg><span>Canva</span></button>
       </nav>
 
       <main class="canvas-area" id="canvasArea">
