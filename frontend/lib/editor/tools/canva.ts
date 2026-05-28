@@ -598,7 +598,10 @@ function showTextOverlay() {
   overlay.style.fontFamily = sel.fontFamily || 'sans-serif';
   overlay.style.fontWeight = sel.bold ? 'bold' : 'normal';
   overlay.style.fontStyle = sel.italic ? 'italic' : 'normal';
-  overlay.style.textDecoration = sel.underline ? 'underline' : (sel.strikethrough ? 'line-through' : 'none');
+  const decorations: string[] = [];
+  if (sel.underline) decorations.push('underline');
+  if (sel.strikethrough) decorations.push('line-through');
+  overlay.style.textDecoration = decorations.length ? decorations.join(' ') : 'none';
   overlay.style.opacity = String(sel.opacity);
   overlay.style.padding = (4 * zoom) + 'px';
   overlay.style.outlineWidth = (2 * zoom) + 'px';
