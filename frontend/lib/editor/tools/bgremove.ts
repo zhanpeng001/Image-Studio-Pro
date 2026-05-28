@@ -2,7 +2,7 @@ import { S } from '../state.js';
 import { $, optional$ } from '../dom.js';
 import { fitImage, renderAll } from '../canvas.js';
 import { pushHistory } from '../history.js';
-import { toast } from '../ui.js';
+import { toast, showLoading, hideLoading } from '../ui.js';
 import { canvasFromImage, loadImageFromCanvas } from '../utils.js';
 import { removeBackground } from '@imgly/background-removal';
 
@@ -168,19 +168,18 @@ async function runAIBG() {
   if (!S.bg.aiLoaded) { toast('Load AI model first'); return; }
   if (!S.img) return;
   pushHistory('BG Remove');
-  toast('Processing with AI...');
+  showLoading('Removing background with AI...');
 
   try {
     const tmp = canvasFromImage(S.img);
-
     const processed = S.bg.enhance ? enhanceEdges(tmp) : tmp;
+    const blob = await new Promise<Blob | null>(res => processed.toBlob(res, 'image/png'));
+    if (!blob) throw new Error('Canvas toBlob failed');
 
-    const blob = await new Promise(res => processed.toBlob(res, 'image/png'));
     const resBlob = await removeBackground(blob, {
       model: S.bg.model,
       progress: (key, current, total) => {
         const pct = Math.round((current / total) * 100);
-        // update status bar with progress
         const statusEl = document.getElementById('statusTool');
         if (statusEl) statusEl.textContent = `BG Remove ${pct}%`;
       },
@@ -191,12 +190,18 @@ async function runAIBG() {
     nimg.onload = () => {
       S.img = nimg; fitImage(); renderAll();
       URL.revokeObjectURL(url);
+      hideLoading();
       toast('Background removed');
       (document.querySelector('.side-btn[data-tool="bgremove"]') as HTMLElement)?.click();
     };
-    nimg.onerror = () => { toast('Failed to decode result'); URL.revokeObjectURL(url); };
+    nimg.onerror = () => {
+      hideLoading();
+      toast('Failed to decode result');
+      URL.revokeObjectURL(url);
+    };
     nimg.src = url;
   } catch (err) {
+    hideLoading();
     toast('Error: ' + ((err as Error).message || 'unknown'));
     (document.querySelector('.side-btn[data-tool="bgremove"]') as HTMLElement)?.click();
   }

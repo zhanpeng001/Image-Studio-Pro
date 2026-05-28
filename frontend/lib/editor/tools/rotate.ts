@@ -2,7 +2,7 @@ import { S, resetRotatePreview } from '../state.js';
 import { $, mc, oc, ctx } from '../dom.js';
 import { fitImage, renderAll } from '../canvas.js';
 import { pushHistory } from '../history.js';
-import { toast } from '../ui.js';
+import { toast, showLoading, hideLoading } from '../ui.js';
 import { triggerDownload } from '../utils.js';
 import JSZip from 'jszip';
 
@@ -282,7 +282,7 @@ async function downloadRotationSnapshots() {
     return;
   }
 
-  toast('Building ZIP with ' + S.rotate.snapshots.length + ' snapshots...');
+  showLoading('Building ZIP with ' + S.rotate.snapshots.length + ' snapshots...');
   const zip = new JSZip();
   const baseName = S.fname.replace(/\.[^.]+$/, '') || 'image';
 
@@ -294,6 +294,7 @@ async function downloadRotationSnapshots() {
 
   const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
   triggerDownload(blob, baseName + '_rotation_snapshots.zip');
+  hideLoading();
   toast('ZIP downloaded: ' + S.rotate.snapshots.length + ' snapshots');
 }
 

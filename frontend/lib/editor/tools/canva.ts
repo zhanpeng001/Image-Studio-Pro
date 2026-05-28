@@ -2,7 +2,7 @@ import { S } from '../state.js';
 import type { CanvaLayer } from '../state.js';
 import { oc, octx, mc } from '../dom.js';
 import { pushHistory } from '../history.js';
-import { toast } from '../ui.js';
+import { toast, showLoading, hideLoading } from '../ui.js';
 import { drawHandles } from '../overlay.js';
 import { computeCanvaMergeGeometry } from './canva-geometry.js';
 import { renderLayerToContext } from './canva-draw.js';
@@ -1097,6 +1097,7 @@ async function mergeAllLayers() {
   if (c.layers.length === 0) { toast('No layers'); return; }
 
   pushHistory('Canva Merge');
+  showLoading('Merging layers...');
 
   const base = c.layers[0];
   const merge = computeCanvaMergeGeometry(c.layers);
@@ -1109,9 +1110,12 @@ async function mergeAllLayers() {
   out.width = outW;
   out.height = outH;
   const outCtx = out.getContext('2d')!;
-  if (!outCtx) { toast('Merge failed: no canvas context'); return; }
+  if (!outCtx) {
+    hideLoading();
+    toast('Merge failed: no canvas context');
+    return;
+  }
 
-  // Fill with transparent background first
   outCtx.clearRect(0, 0, outW, outH);
 
   for (const layer of c.layers) {
@@ -1140,6 +1144,7 @@ async function mergeAllLayers() {
       img.src = out.toDataURL('image/png');
     });
   } catch (err) {
+    hideLoading();
     toast('Merge failed: ' + (err as Error).message);
     return;
   }
@@ -1147,10 +1152,14 @@ async function mergeAllLayers() {
   S.img = nimg;
   c.layers = [];
   c.selectedIdx = -1;
+  c.zoom = 1;
   c.workspaceW = 0;
   c.workspaceH = 0;
-  c.dragging = false; c.moving = false; c.panning = false; c.dragCorner = null;
-  const panel = document.getElementById('panel');
-  if (panel) renderCanvaPanel(panel);
-  toast('All layers merged');
+
+  hideLoading();
+  toast('Merged layers');
+
+  // Switch to crop tool and render normally
+  const cropBtn = document.querySelector('.side-btn[data-tool="crop"]') as HTMLElement | null;
+  if (cropBtn) cropBtn.click();
 }

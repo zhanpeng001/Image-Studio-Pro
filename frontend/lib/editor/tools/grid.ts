@@ -1,7 +1,7 @@
 import { S } from '../state.js';
 import { $, oc } from '../dom.js';
 import { drawGridOverlay } from '../overlay.js';
-import { toast } from '../ui.js';
+import { toast, showLoading, hideLoading } from '../ui.js';
 import { triggerDownload } from '../utils.js';
 import JSZip from 'jszip';
 
@@ -96,14 +96,13 @@ function gridUp() { S.grid.drag = null; if (S.tool === 'grid') oc.style.cursor =
 
 async function downloadGridZip() {
   const g = S.grid;
-
   if (!S.img) return;
   const img = S.img, iw = img.width, ih = img.height;
   const he = [0, ...g.hLines, 1];
   const ve = [0, ...g.vLines, 1];
   const total = g.rows * g.cols;
 
-  toast('Building ZIP with ' + total + ' cells...');
+  showLoading('Building ZIP with ' + total + ' cells...');
   const zip = new JSZip();
 
   for (let r = 0; r < g.rows; r++) {
@@ -124,5 +123,6 @@ async function downloadGridZip() {
 
   const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
   triggerDownload(blob, S.fname.replace('.png', '') + '_grid.zip');
+  hideLoading();
   toast('ZIP downloaded: ' + total + ' cells');
 }
