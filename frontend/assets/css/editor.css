@@ -1241,3 +1241,33 @@ body {
   background: var(--accent-soft);
   color: var(--accent);
 }
+
+/* LOADING OVERLAY */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 7, 11, 0.72);
+  backdrop-filter: blur(8px);
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 28px 36px;
+  background: var(--surface);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 28px 90px rgba(0,0,0,0.55);
+}
+
+.loading-text {
+  font-size: 13px;
+  color: var(--text2);
+  font-weight: 500;
+}

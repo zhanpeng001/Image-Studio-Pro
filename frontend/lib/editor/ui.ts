@@ -132,3 +132,30 @@ export function openSaveDialog() {
   saveFormat.value = 'png';
   saveModal.style.display = 'flex';
 }
+
+// ==================== LOADING OVERLAY ====================
+let loadingOverlay: HTMLDivElement | null = null;
+
+export function showLoading(message: string) {
+  if (loadingOverlay) loadingOverlay.remove();
+
+  const overlay = document.createElement('div');
+  overlay.className = 'loading-overlay';
+  overlay.setAttribute('role', 'status');
+  overlay.setAttribute('aria-live', 'polite');
+  overlay.innerHTML = `
+    <div class="loading-box">
+      <div class="spinner"></div>
+      <span class="loading-text">${message}</span>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  loadingOverlay = overlay;
+}
+
+export function hideLoading() {
+  if (loadingOverlay) {
+    loadingOverlay.remove();
+    loadingOverlay = null;
+  }
+}
