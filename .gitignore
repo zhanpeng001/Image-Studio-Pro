@@ -8,3 +8,4 @@ dist/
 backend/*.exe
 backend/server
 backend/server.exe~
+docs/superpowers/
